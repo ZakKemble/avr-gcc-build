@@ -48,8 +48,8 @@ fi
 # Stop on errors
 set -e
 
-NAME_BINUTILS="binutils-2.26"
-NAME_GCC="gcc-6.1.0"
+NAME_BINUTILS="binutils-2.28"
+NAME_GCC="gcc-7.1.0"
 NAME_LIBC="avr-libc-2.0.0"
 
 HOST_WIN32="i686-w64-mingw32"
@@ -79,6 +79,29 @@ makeDir()
 {
 	rm -rf "$1/"
 	mkdir -p "$1"
+}
+
+fixGCCAVR()
+{
+	# In GCC 7.1.0 there seems to be an issue with INT8_MAX and some other things being undefined in /gcc/config/avr/avr.c when building for Windows.
+	# Adding '#include <stdint.h>' doesn't fix it, but manually defining the values does the trick.
+
+	echo "Fixing missing defines..."
+
+	DEFSFIX="
+		#if (defined _WIN32 || defined __CYGWIN__)
+		#define INT8_MIN (-128)
+		#define INT16_MIN (-32768)
+		#define INT8_MAX 127
+		#define INT16_MAX 32767
+		#define UINT8_MAX 0xff
+		#define UINT16_MAX 0xffff
+		#endif
+	"
+
+	ORIGINAL=$(cat ../gcc/config/avr/avr.c)
+	echo "$DEFSFIX" > ../gcc/config/avr/avr.c
+	echo "$ORIGINAL" >> ../gcc/config/avr/avr.c
 }
 
 echo "Clearing output directories..."
@@ -133,6 +156,7 @@ mkdir -p $NAME_GCC/obj-avr
 cd $NAME_GCC
 ./contrib/download_prerequisites
 cd obj-avr
+fixGCCAVR
 [ $BUILD_LINUX -eq 1 ] && confMake "$PREFIX_LINUX" "$OPTS_GCC"
 [ $BUILD_WIN32 -eq 1 ] && confMake "$PREFIX_WIN32" "$OPTS_GCC" --host=$HOST_WIN32 --build=`../config.guess`
 [ $BUILD_WIN64 -eq 1 ] && confMake "$PREFIX_WIN64" "$OPTS_GCC" --host=$HOST_WIN64 --build=`../config.guess`
