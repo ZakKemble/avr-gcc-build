@@ -48,8 +48,8 @@ fi
 # Stop on errors
 set -e
 
-NAME_BINUTILS="binutils-2.28"
-NAME_GCC="gcc-7.1.0"
+NAME_BINUTILS="binutils-2.29"
+NAME_GCC="gcc-7.2.0"
 NAME_LIBC="avr-libc-2.0.0"
 
 HOST_WIN32="i686-w64-mingw32"
@@ -117,12 +117,12 @@ CC=""
 export CC
 
 echo "Downloading sources..."
-rm -f $NAME_BINUTILS.tar.bz2
+rm -f $NAME_BINUTILS.tar.xz
 rm -rf $NAME_BINUTILS/
-wget ftp://ftp.mirrorservice.org/sites/ftp.gnu.org/gnu/binutils/$NAME_BINUTILS.tar.bz2
-rm -f $NAME_GCC.tar.bz2
+wget ftp://ftp.mirrorservice.org/sites/ftp.gnu.org/gnu/binutils/$NAME_BINUTILS.tar.xz
+rm -f $NAME_GCC.tar.xz
 rm -rf $NAME_GCC/
-wget ftp://ftp.mirrorservice.org/sites/sourceware.org/pub/gcc/releases/$NAME_GCC/$NAME_GCC.tar.bz2
+wget ftp://ftp.mirrorservice.org/sites/sourceware.org/pub/gcc/releases/$NAME_GCC/$NAME_GCC.tar.xz
 if [ $BUILD_LIBC -eq 1 ]; then
 	rm -f $NAME_LIBC.tar.bz2
 	rm -rf $NAME_LIBC/
@@ -140,7 +140,7 @@ confMake()
 # Make AVR-Binutils
 echo "Making Binutils..."
 echo "Extracting..."
-bunzip2 -c $NAME_BINUTILS.tar.bz2 | tar xf -
+tar xf $NAME_BINUTILS.tar.xz
 mkdir -p $NAME_BINUTILS/obj-avr
 cd $NAME_BINUTILS/obj-avr
 [ $BUILD_LINUX -eq 1 ] && confMake "$PREFIX_LINUX" "$OPTS_BINUTILS"
@@ -151,12 +151,12 @@ cd ../../
 # Make AVR-GCC
 echo "Making GCC..."
 echo "Extracting..."
-bunzip2 -c $NAME_GCC.tar.bz2 | tar xf -
+tar xf $NAME_GCC.tar.xz
 mkdir -p $NAME_GCC/obj-avr
 cd $NAME_GCC
 ./contrib/download_prerequisites
 cd obj-avr
-fixGCCAVR
+# fixGCCAVR
 [ $BUILD_LINUX -eq 1 ] && confMake "$PREFIX_LINUX" "$OPTS_GCC"
 [ $BUILD_WIN32 -eq 1 ] && confMake "$PREFIX_WIN32" "$OPTS_GCC" --host=$HOST_WIN32 --build=`../config.guess`
 [ $BUILD_WIN64 -eq 1 ] && confMake "$PREFIX_WIN64" "$OPTS_GCC" --host=$HOST_WIN64 --build=`../config.guess`
