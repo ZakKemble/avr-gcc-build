@@ -48,8 +48,8 @@ fi
 # Stop on errors
 set -e
 
-NAME_BINUTILS="binutils-2.29"
-NAME_GCC="gcc-7.2.0"
+NAME_BINUTILS="binutils-2.30"
+NAME_GCC="gcc-7.3.0"
 NAME_LIBC="avr-libc-2.0.0"
 
 HOST_WIN32="i686-w64-mingw32"
