@@ -48,8 +48,8 @@ fi
 # Stop on errors
 set -e
 
-NAME_BINUTILS="binutils-2.30"
-NAME_GCC="gcc-8.1.0"
+NAME_BINUTILS="binutils-2.31.1"
+NAME_GCC="gcc-8.2.0"
 NAME_LIBC="avr-libc-2.0.0"
 
 HOST_WIN32="i686-w64-mingw32"
@@ -69,6 +69,7 @@ OPTS_GCC="
 	--with-dwarf2
 	--disable-shared
 	--enable-static
+	--enable-mingw-wildcard
 "
 
 OPTS_LIBC=""
@@ -154,6 +155,7 @@ echo "Extracting..."
 tar xf $NAME_GCC.tar.xz
 mkdir -p $NAME_GCC/obj-avr
 cd $NAME_GCC
+chmod +x ./contrib/download_prerequisites
 ./contrib/download_prerequisites
 cd obj-avr
 # fixGCCAVR
