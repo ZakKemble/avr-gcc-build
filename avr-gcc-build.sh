@@ -49,7 +49,7 @@ fi
 set -e
 
 NAME_BINUTILS="binutils-2.32"
-NAME_GCC="gcc-8.3.0"
+NAME_GCC="gcc-9.1.0"
 NAME_LIBC="avr-libc-2.0.0"
 
 HOST_WIN32="i686-w64-mingw32"
