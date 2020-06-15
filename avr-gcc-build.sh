@@ -5,43 +5,49 @@
 # For optimum compile time this should generally be set to the number of CPU cores your machine has
 JOBCOUNT=$(getconf _NPROCESSORS_ONLN)
 
-# Build Linux toolchain
+# Build for Linux
 # A Linux AVR-GCC toolchain is required to build a Windows toolchain
 # If the Linux toolchain has already been built then you can set this to 0
-BUILD_LINUX=1
+FOR_LINUX=1
 
-# Build 32 bit Windows toolchain
-BUILD_WIN32=1
+# Build for 32 bit Windows
+FOR_WINX86=1
 
-# Build 64 bit Windows toolchain
-BUILD_WIN64=1
+# Build for 64 bit Windows
+FOR_WINX64=1
 
-# Build Binutils
+# Build Binutils for selected OSs
 BUILD_BINUTILS=1
 
-# Build GCC
+# Build GCC for selected OSs (requires AVR-Binutils)
 BUILD_GCC=1
 
-# Build AVR-LibC
+# Build GDB for selected OSs
+BUILD_GDB=1
+
+# Build AVR-LibC (requires AVR-GCC)
 BUILD_LIBC=1
 
-# Output locations for built toolchains
-PREFIX_LINUX=/omgwtfbbq/linux
-PREFIX_WIN32=/omgwtfbbq/win32
-PREFIX_WIN64=/omgwtfbbq/win64
-PREFIX_LIBC=/omgwtfbbq/libc
-
-NAME_BINUTILS="binutils-2.32"
-NAME_GCC="gcc-9.2.0"
+NAME_BINUTILS="binutils-2.34"
+NAME_GCC="gcc-10.1.0"
+NAME_GDB="gdb-9.2"
 NAME_LIBC="avr-libc3.git" # https://github.com/stevenj/avr-libc3
 COMMIT_LIBC="d09c2a61764aced3274b6dde4399e11b0aee4a87"
 
-HOST_WIN32="i686-w64-mingw32"
-HOST_WIN64="x86_64-w64-mingw32"
+# Output locations for built toolchains
+BASE=/omgwtfbbq/
+PREFIX_GCC_LINUX=${BASE}avr-${NAME_GCC}-x64-linux
+PREFIX_GCC_WINX86=${BASE}avr-${NAME_GCC}-x86-windows
+PREFIX_GCC_WINX64=${BASE}avr-${NAME_GCC}-x64-windows
+PREFIX_LIBC=${BASE}avr-libc # The contents of the avr-libc directory will need to be copied/merged with each of the target toolchain directories
+
+HOST_WINX86="i686-w64-mingw32"
+HOST_WINX64="x86_64-w64-mingw32"
 
 OPTS_BINUTILS="
 	--target=avr
 	--disable-nls
+	--disable-werror
 "
 
 OPTS_GCC="
@@ -54,6 +60,13 @@ OPTS_GCC="
 	--disable-shared
 	--enable-static
 	--enable-mingw-wildcard
+	--enable-plugin
+	--with-gnu-as
+"
+
+OPTS_GDB="
+	--target=avr
+	--with-static-standard-libraries
 "
 
 OPTS_LIBC=""
@@ -61,10 +74,10 @@ OPTS_LIBC=""
 # Install packages
 if hash apt-get 2>/dev/null; then
 	# This works for Debian 8 and Ubuntu 16.04
-	apt-get install wget make mingw-w64 gcc g++ bzip2 git autoconf
+	apt-get install wget make mingw-w64 gcc g++ bzip2 git autoconf texinfo
 elif hash yum 2>/dev/null; then
 	# This works for CentOS 7
-	yum install wget git
+	yum install wget git texinfo
 	rpm -q epel-release-7-6.noarch >/dev/null
 	if [ $? -ne 0 ]; then
 		# EPEL is for the MinGW stuff
@@ -75,7 +88,7 @@ elif hash yum 2>/dev/null; then
 	yum install make mingw64-gcc mingw64-gcc-c++ mingw32-gcc mingw32-gcc-c++ gcc gcc-c++ bzip2 autoconf
 elif hash pacman 2>/dev/null; then
 	# Things have changed with Arch and this is now broken :/
-	pacman -S --needed wget make mingw-w64-binutils mingw-w64-gcc mingw-w64-crt mingw-w64-headers mingw-w64-winpthreads gcc bzip2 git autoconf
+	pacman -S --needed wget make mingw-w64-binutils mingw-w64-gcc mingw-w64-crt mingw-w64-headers mingw-w64-winpthreads gcc bzip2 git autoconf texinfo
 fi
 
 # Stop on errors
@@ -113,9 +126,9 @@ fixGCCAVR()
 }
 
 echo "Clearing output directories..."
-[ $BUILD_LINUX -eq 1 ] && makeDir "$PREFIX_LINUX"
-[ $BUILD_WIN32 -eq 1 ] && makeDir "$PREFIX_WIN32"
-[ $BUILD_WIN64 -eq 1 ] && makeDir "$PREFIX_WIN64"
+[ $FOR_LINUX -eq 1 ] && makeDir "$PREFIX_GCC_LINUX"
+[ $FOR_WINX86 -eq 1 ] && makeDir "$PREFIX_GCC_WINX86"
+[ $FOR_WINX64 -eq 1 ] && makeDir "$PREFIX_GCC_WINX64"
 [ $BUILD_LIBC -eq 1 ] && makeDir "$PREFIX_LIBC"
 
 echo "Clearing old downloads..."
@@ -123,21 +136,24 @@ rm -f $NAME_BINUTILS.tar.xz
 rm -rf $NAME_BINUTILS/
 rm -f $NAME_GCC.tar.xz
 rm -rf $NAME_GCC/
+rm -f $NAME_GDB.tar.xz
+rm -rf $NAME_GDB/
 rm -f $NAME_LIBC.tar.bz2
 rm -rf $NAME_LIBC/
 
 echo "Downloading sources..."
-[ $BUILD_BINUTILS -eq 1 ] && wget ftp://ftp.mirrorservice.org/sites/ftp.gnu.org/gnu/binutils/$NAME_BINUTILS.tar.xz
-[ $BUILD_GCC -eq 1 ] && wget ftp://ftp.mirrorservice.org/sites/sourceware.org/pub/gcc/releases/$NAME_GCC/$NAME_GCC.tar.xz
+[ $BUILD_BINUTILS -eq 1 ] && wget https://ftpmirror.gnu.org/binutils/$NAME_BINUTILS.tar.xz
+[ $BUILD_GCC -eq 1 ] && wget https://ftpmirror.gnu.org/gcc/$NAME_GCC/$NAME_GCC.tar.xz
+[ $BUILD_GDB -eq 1 ] && wget https://ftpmirror.gnu.org/gdb/$NAME_GDB.tar.xz
 if [ $BUILD_LIBC -eq 1 ]; then
 	if [ "$NAME_LIBC" = "avr-libc3.git" ]; then
 		git clone https://github.com/stevenj/$NAME_LIBC "$NAME_LIBC"
 	else
-		wget ftp://ftp.mirrorservice.org/sites/download.savannah.gnu.org/releases/avr-libc/$NAME_LIBC.tar.bz2
+		wget http://download.savannah.gnu.org/releases/avr-libc/$NAME_LIBC.tar.bz2
 	fi
 fi
 
-PATH="$PREFIX_LINUX"/bin:"$PATH"
+PATH="$PREFIX_GCC_LINUX"/bin:"$PATH"
 export PATH
 
 CC=""
@@ -151,6 +167,16 @@ confMake()
 	rm -rf *
 }
 
+confMakeGDB()
+{
+	# install-strip doesn't work properly with GDB, so we have to manually strip the massive 100MB+ executable down to ~5MB then do a normal install
+	../configure --prefix=$2 $3 $4 $5
+	make -j $JOBCOUNT
+	$1
+	make install
+	rm -rf *
+}
+
 # Make AVR-Binutils
 if [ $BUILD_BINUTILS -eq 1 ]; then
 	echo "Making Binutils..."
@@ -158,9 +184,9 @@ if [ $BUILD_BINUTILS -eq 1 ]; then
 	tar xf $NAME_BINUTILS.tar.xz
 	mkdir -p $NAME_BINUTILS/obj-avr
 	cd $NAME_BINUTILS/obj-avr
-	[ $BUILD_LINUX -eq 1 ] && confMake "$PREFIX_LINUX" "$OPTS_BINUTILS"
-	[ $BUILD_WIN32 -eq 1 ] && confMake "$PREFIX_WIN32" "$OPTS_BINUTILS" --host=$HOST_WIN32 --build=`../config.guess`
-	[ $BUILD_WIN64 -eq 1 ] && confMake "$PREFIX_WIN64" "$OPTS_BINUTILS" --host=$HOST_WIN64 --build=`../config.guess`
+	[ $FOR_LINUX -eq 1 ] && confMake "$PREFIX_GCC_LINUX" "$OPTS_BINUTILS"
+	[ $FOR_WINX86 -eq 1 ] && confMake "$PREFIX_GCC_WINX86" "$OPTS_BINUTILS" --host=$HOST_WINX86 --build=`../config.guess`
+	[ $FOR_WINX64 -eq 1 ] && confMake "$PREFIX_GCC_WINX64" "$OPTS_BINUTILS" --host=$HOST_WINX64 --build=`../config.guess`
 	cd ../../
 else
 	echo "Skipping Binutils..."
@@ -177,12 +203,27 @@ if [ $BUILD_GCC -eq 1 ]; then
 	./contrib/download_prerequisites
 	cd obj-avr
 	# fixGCCAVR
-	[ $BUILD_LINUX -eq 1 ] && confMake "$PREFIX_LINUX" "$OPTS_GCC"
-	[ $BUILD_WIN32 -eq 1 ] && confMake "$PREFIX_WIN32" "$OPTS_GCC" --host=$HOST_WIN32 --build=`../config.guess`
-	[ $BUILD_WIN64 -eq 1 ] && confMake "$PREFIX_WIN64" "$OPTS_GCC" --host=$HOST_WIN64 --build=`../config.guess`
+	[ $FOR_LINUX -eq 1 ] && confMake "$PREFIX_GCC_LINUX" "$OPTS_GCC"
+	[ $FOR_WINX86 -eq 1 ] && confMake "$PREFIX_GCC_WINX86" "$OPTS_GCC" --host=$HOST_WINX86 --build=`../config.guess`
+	[ $FOR_WINX64 -eq 1 ] && confMake "$PREFIX_GCC_WINX64" "$OPTS_GCC" --host=$HOST_WINX64 --build=`../config.guess`
 	cd ../../
 else
 	echo "Skipping GCC..."
+fi
+
+# Make GDB
+if [ $BUILD_GDB -eq 1 ]; then
+	echo "Making GDB..."
+	echo "Extracting..."
+	tar xf $NAME_GDB.tar.xz
+	mkdir -p $NAME_GDB/obj-avr
+	cd $NAME_GDB/obj-avr
+	[ $FOR_LINUX -eq 1 ] && confMakeGDB "strip gdb/gdb" "$PREFIX_GCC_LINUX" "$OPTS_GDB"
+	[ $FOR_WINX86 -eq 1 ] && confMakeGDB "$HOST_WINX86-strip gdb/gdb.exe" "$PREFIX_GCC_WINX86" "$OPTS_GDB" --host=$HOST_WINX86 --build=`../config.guess`
+	[ $FOR_WINX64 -eq 1 ] && confMakeGDB "$HOST_WINX64-strip gdb/gdb.exe" "$PREFIX_GCC_WINX64" "$OPTS_GDB" --host=$HOST_WINX64 --build=`../config.guess`
+	cd ../../
+else
+	echo "Skipping GDB..."
 fi
 
 # Make AVR-LibC
