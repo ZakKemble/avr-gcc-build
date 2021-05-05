@@ -28,9 +28,9 @@ BUILD_GDB=1
 # Build AVR-LibC (requires AVR-GCC)
 BUILD_LIBC=1
 
-NAME_BINUTILS="binutils-2.34"
-NAME_GCC="gcc-10.1.0"
-NAME_GDB="gdb-9.2"
+NAME_BINUTILS="binutils-2.36.1"
+NAME_GCC="gcc-11.1.0"
+NAME_GDB="gdb-10.2"
 NAME_LIBC="avr-libc3.git" # https://github.com/stevenj/avr-libc3
 COMMIT_LIBC="d09c2a61764aced3274b6dde4399e11b0aee4a87"
 
