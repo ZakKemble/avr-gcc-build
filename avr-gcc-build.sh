@@ -12,9 +12,13 @@
 
 # http://www.nongnu.org/avr-libc/user-manual/install_tools.html
 
+# VM with 4x AMD Ryzen 5 5600X cores & 5.5GB RAM
+# Debian 11 & GCC 10.2.1
+# AVR-GCC 12.1.0 compile time: Around 1 hour for all 3 hosts
+
 # For optimum compile time this should generally be set to the number of CPU cores your machine has.
-# Some systems with not much RAM may fail with "collect2: fatal error: ld terminated with signal 9 [Killed]", if this happens try reducing the JOBCOUNT value.
-# In my case Debian 10 builds GCC 10.1.0 fine with 4 cores and 2GB RAM, but Debian 11 needs 5.5GB?
+# Some systems with not much RAM may fail with "collect2: fatal error: ld terminated with signal 9 [Killed]", if this happens try reducing the JOBCOUNT value or add more RAM.
+# In my case using GCC 8.3.0 on Debian 10 with 2GB RAM is fine, but Debian 11 and GCC 10.2.1 needs 5.5GB
 JOBCOUNT=$(getconf _NPROCESSORS_ONLN)
 
 # Build for Linux
@@ -40,10 +44,11 @@ BUILD_GDB=1
 # Build AVR-LibC (requires AVR-GCC)
 BUILD_LIBC=1
 
-NAME_BINUTILS="binutils-2.36.1"
-NAME_GCC="gcc-11.1.0"
-NAME_GDB="gdb-10.2"
-NAME_LIBC="avr-libc3.git" # https://github.com/stevenj/avr-libc3
+NAME_BINUTILS="binutils-2.38"
+NAME_GCC="gcc-12.1.0"
+NAME_GDB="gdb-12.1"
+NAME_GMP="gmp-6.2.1" # GDB 11 and newer needs libgmp
+NAME_LIBC="avr-libc3.git" # https://github.com/ZakKemble/avr-libc3
 COMMIT_LIBC="d09c2a61764aced3274b6dde4399e11b0aee4a87"
 
 # Output locations for built toolchains
@@ -84,10 +89,10 @@ OPTS_GDB="
 OPTS_LIBC=""
 
 # Install packages
-if hash apt-get 2>/dev/null; then
+if hash apt 2>/dev/null; then
 
 	# This works for Debian 8 and Ubuntu 16.04
-	apt-get install wget make mingw-w64 gcc g++ bzip2 git autoconf texinfo
+	apt install wget make mingw-w64 gcc g++ bzip2 git autoconf texinfo libgmp-dev
 
 elif hash yum 2>/dev/null; then
 
@@ -102,7 +107,7 @@ elif hash yum 2>/dev/null; then
 		rpm -Uvh epel-release-7-6.noarch.rpm
 	fi
 
-	yum install make mingw64-gcc mingw64-gcc-c++ mingw32-gcc mingw32-gcc-c++ gcc gcc-c++ bzip2 autoconf
+	yum install make mingw64-gcc mingw64-gcc-c++ mingw32-gcc mingw32-gcc-c++ gcc gcc-c++ bzip2 autoconf gmp-devel
 
 elif hash pacman 2>/dev/null; then
 
@@ -167,16 +172,21 @@ rm -f $NAME_GCC.tar.xz
 rm -rf $NAME_GCC/
 rm -f $NAME_GDB.tar.xz
 rm -rf $NAME_GDB/
+rm -f $NAME_GMP.tar.xz
+rm -rf $NAME_GMP/
 rm -f $NAME_LIBC.tar.bz2
 rm -rf $NAME_LIBC/
 
 log "Downloading sources..."
 [ $BUILD_BINUTILS -eq 1 ] && wget https://ftpmirror.gnu.org/binutils/$NAME_BINUTILS.tar.xz
 [ $BUILD_GCC -eq 1 ] && wget https://ftpmirror.gnu.org/gcc/$NAME_GCC/$NAME_GCC.tar.xz
-[ $BUILD_GDB -eq 1 ] && wget https://ftpmirror.gnu.org/gdb/$NAME_GDB.tar.xz
+if [ $BUILD_GDB -eq 1 ]; then
+	wget https://ftpmirror.gnu.org/gdb/$NAME_GDB.tar.xz
+	[ $FOR_WINX86 -eq 1 ] || [ $FOR_WINX64 -eq 1 ] && wget https://ftpmirror.gnu.org/gmp/$NAME_GMP.tar.xz
+fi
 if [ $BUILD_LIBC -eq 1 ]; then
 	if [ "$NAME_LIBC" = "avr-libc3.git" ]; then
-		git clone https://github.com/stevenj/$NAME_LIBC "$NAME_LIBC"
+		git clone https://github.com/ZakKemble/$NAME_LIBC "$NAME_LIBC"
 	else
 		wget http://download.savannah.gnu.org/releases/avr-libc/$NAME_LIBC.tar.bz2
 	fi
@@ -190,19 +200,9 @@ export CC
 
 confMake()
 {
-	../configure --prefix=$1 $2 $3 $4
+	../configure --prefix=$1 $2 $3 --build=`../config.guess`
 	make -j $JOBCOUNT
 	make install-strip
-	rm -rf *
-}
-
-confMakeGDB()
-{
-	# install-strip doesn't work properly with GDB, so we have to manually strip the massive 100MB+ executable down to ~5MB then do a normal install
-	../configure --prefix=$2 $3 $4 $5
-	make -j $JOBCOUNT
-	$1
-	make install
 	rm -rf *
 }
 
@@ -217,9 +217,9 @@ if [ $BUILD_BINUTILS -eq 1 ]; then
 	log "Making for Linux..."
 	[ $FOR_LINUX -eq 1 ] && confMake "$PREFIX_GCC_LINUX" "$OPTS_BINUTILS"
 	log "Making for Windows x86..."
-	[ $FOR_WINX86 -eq 1 ] && confMake "$PREFIX_GCC_WINX86" "$OPTS_BINUTILS" --host=$HOST_WINX86 --build=`../config.guess`
+	[ $FOR_WINX86 -eq 1 ] && confMake "$PREFIX_GCC_WINX86" "$OPTS_BINUTILS" --host=$HOST_WINX86
 	log "Making for Windows x64..."
-	[ $FOR_WINX64 -eq 1 ] && confMake "$PREFIX_GCC_WINX64" "$OPTS_BINUTILS" --host=$HOST_WINX64 --build=`../config.guess`
+	[ $FOR_WINX64 -eq 1 ] && confMake "$PREFIX_GCC_WINX64" "$OPTS_BINUTILS" --host=$HOST_WINX64
 
 	cd ../../
 else
@@ -244,9 +244,9 @@ if [ $BUILD_GCC -eq 1 ]; then
 	log "Making for Linux..."
 	[ $FOR_LINUX -eq 1 ] && confMake "$PREFIX_GCC_LINUX" "$OPTS_GCC"
 	log "Making for Windows x86..."
-	[ $FOR_WINX86 -eq 1 ] && confMake "$PREFIX_GCC_WINX86" "$OPTS_GCC" --host=$HOST_WINX86 --build=`../config.guess`
+	[ $FOR_WINX86 -eq 1 ] && confMake "$PREFIX_GCC_WINX86" "$OPTS_GCC" --host=$HOST_WINX86
 	log "Making for Windows x64..."
-	[ $FOR_WINX64 -eq 1 ] && confMake "$PREFIX_GCC_WINX64" "$OPTS_GCC" --host=$HOST_WINX64 --build=`../config.guess`
+	[ $FOR_WINX64 -eq 1 ] && confMake "$PREFIX_GCC_WINX64" "$OPTS_GCC" --host=$HOST_WINX64
 
 	cd ../../
 else
@@ -255,20 +255,53 @@ fi
 
 # Make GDB
 if [ $BUILD_GDB -eq 1 ]; then
-	log "***GDB***"
+	log "***GDB (and GMP for Windows)***"
+
 	log "Extracting..."
 	tar xf $NAME_GDB.tar.xz
 	mkdir -p $NAME_GDB/obj-avr
-	cd $NAME_GDB/obj-avr
-	
-	log "Making for Linux..."
-	[ $FOR_LINUX -eq 1 ] && confMakeGDB "strip gdb/gdb" "$PREFIX_GCC_LINUX" "$OPTS_GDB"
-	log "Making for Windows x86..."
-	[ $FOR_WINX86 -eq 1 ] && confMakeGDB "$HOST_WINX86-strip gdb/gdb.exe" "$PREFIX_GCC_WINX86" "$OPTS_GDB" --host=$HOST_WINX86 --build=`../config.guess`
-	log "Making for Windows x64..."
-	[ $FOR_WINX64 -eq 1 ] && confMakeGDB "$HOST_WINX64-strip gdb/gdb.exe" "$PREFIX_GCC_WINX64" "$OPTS_GDB" --host=$HOST_WINX64 --build=`../config.guess`
+	if [ $FOR_WINX86 -eq 1 ] || [ $FOR_WINX64 -eq 1 ]; then
+		tar xf $NAME_GMP.tar.xz
+		mkdir -p $NAME_GMP/obj
+	fi
 
-	cd ../../
+	if [ $FOR_LINUX -eq 1 ]; then
+		log "Making for Linux..."
+		cd $NAME_GDB/obj-avr
+		confMake "$PREFIX_GCC_LINUX" "$OPTS_GDB"
+		cd ../../
+	fi
+	
+	# libgmp needs to be installed into the host compiler location since --with-gmp= option doesn't seem to be working on GDB
+	
+	if [ $FOR_WINX86 -eq 1 ]; then
+		log "Making for Windows x86..."
+
+		# GMP
+		cd $NAME_GMP/obj
+		confMake /usr/$HOST_WINX86 --host=$HOST_WINX86
+
+		# GDB
+		cd ../../$NAME_GDB/obj-avr
+		confMake "$PREFIX_GCC_WINX86" "$OPTS_GDB" --host=$HOST_WINX86
+
+		cd ../../
+	fi
+
+	if [ $FOR_WINX64 -eq 1 ]; then
+		log "Making for Windows x64..."
+
+		# GMP
+		cd $NAME_GMP/obj
+		confMake /usr/$HOST_WINX64 --host=$HOST_WINX64
+
+		# GDB
+		cd ../../$NAME_GDB/obj-avr
+		confMake "$PREFIX_GCC_WINX64" "$OPTS_GDB" --host=$HOST_WINX64
+
+		cd ../../
+	fi
+	
 else
 	log "Skipping GDB..."
 fi
@@ -290,7 +323,7 @@ if [ $BUILD_LIBC -eq 1 ]; then
 	cd $NAME_LIBC/obj-avr
 	
 	log "Making..."
-	confMake "$PREFIX_LIBC" "$OPTS_LIBC" --host=avr --build=`../config.guess`
+	confMake "$PREFIX_LIBC" "$OPTS_LIBC" --host=avr
 
 	cd ../../
 else
@@ -300,7 +333,8 @@ fi
 TIME_END=$(date +%s)
 TIME_RUN=$(($TIME_END - $TIME_START))
 
-log ""
+echo ""
 log "Done in $TIME_RUN seconds"
+log "Toolchains are in $BASE"
 
 exit 0
