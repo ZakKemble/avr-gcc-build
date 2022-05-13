@@ -167,15 +167,15 @@ log "Clearing output directories..."
 
 log "Clearing old downloads..."
 rm -f $NAME_BINUTILS.tar.xz
-rm -rf $NAME_BINUTILS/
+rm -rf $NAME_BINUTILS
 rm -f $NAME_GCC.tar.xz
-rm -rf $NAME_GCC/
+rm -rf $NAME_GCC
 rm -f $NAME_GDB.tar.xz
-rm -rf $NAME_GDB/
+rm -rf $NAME_GDB
 rm -f $NAME_GMP.tar.xz
-rm -rf $NAME_GMP/
+rm -rf $NAME_GMP
 rm -f $NAME_LIBC.tar.bz2
-rm -rf $NAME_LIBC/
+rm -rf $NAME_LIBC
 
 log "Downloading sources..."
 [ $BUILD_BINUTILS -eq 1 ] && wget https://ftpmirror.gnu.org/binutils/$NAME_BINUTILS.tar.xz
