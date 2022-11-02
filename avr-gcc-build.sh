@@ -19,30 +19,30 @@
 # For optimum compile time this should generally be set to the number of CPU cores your machine has.
 # Some systems with not much RAM may fail with "collect2: fatal error: ld terminated with signal 9 [Killed]", if this happens try reducing the JOBCOUNT value or add more RAM.
 # In my case using GCC 8.3.0 on Debian 10 with 2GB RAM is fine, but Debian 11 and GCC 10.2.1 needs 5.5GB
-JOBCOUNT=$(getconf _NPROCESSORS_ONLN)
+JOBCOUNT=${JOBCOUNT:-$(getconf _NPROCESSORS_ONLN)}
 
 # Build for Linux
 # A Linux AVR-GCC toolchain is required to build a Windows toolchain
 # If the Linux toolchain has already been built then you can set this to 0
-FOR_LINUX=1
+FOR_LINUX=${FOR_LINUX:-1}
 
 # Build for 32 bit Windows
-FOR_WINX86=1
+FOR_WINX86=${FOR_WINX86:-1}
 
 # Build for 64 bit Windows
-FOR_WINX64=1
+FOR_WINX64=${FOR_WINX64:-1}
 
 # Build Binutils for selected OSs
-BUILD_BINUTILS=1
+BUILD_BINUTILS=${BUILD_BINUTILS:-1}
 
 # Build GCC for selected OSs (requires AVR-Binutils)
-BUILD_GCC=1
+BUILD_GCC=${BUILD_GCC:-1}
 
 # Build GDB for selected OSs
-BUILD_GDB=1
+BUILD_GDB=${BUILD_GDB:-1}
 
 # Build AVR-LibC (requires AVR-GCC)
-BUILD_LIBC=1
+BUILD_LIBC=${BUILD_LIBC:-1}
 
 NAME_BINUTILS="binutils-2.38"
 NAME_GCC="gcc-12.1.0"
@@ -52,7 +52,7 @@ NAME_LIBC="avr-libc3.git" # https://github.com/ZakKemble/avr-libc3
 COMMIT_LIBC="d09c2a61764aced3274b6dde4399e11b0aee4a87"
 
 # Output locations for built toolchains
-BASE=/omgwtfbbq/
+BASE=${BASE:-/omgwtfbbq/}
 PREFIX_GCC_LINUX=${BASE}avr-${NAME_GCC}-x64-linux
 PREFIX_GCC_WINX86=${BASE}avr-${NAME_GCC}-x86-windows
 PREFIX_GCC_WINX64=${BASE}avr-${NAME_GCC}-x64-windows
