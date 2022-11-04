@@ -92,7 +92,7 @@ OPTS_LIBC=""
 if hash apt 2>/dev/null; then
 
 	# This works for Debian 8 and Ubuntu 16.04
-	apt install wget make mingw-w64 gcc g++ bzip2 git autoconf texinfo libgmp-dev
+	apt install wget make mingw-w64 gcc g++ bzip2 xz-utils git autoconf texinfo libgmp-dev
 
 elif hash yum 2>/dev/null; then
 
@@ -107,12 +107,12 @@ elif hash yum 2>/dev/null; then
 		rpm -Uvh epel-release-7-6.noarch.rpm
 	fi
 
-	yum install make mingw64-gcc mingw64-gcc-c++ mingw32-gcc mingw32-gcc-c++ gcc gcc-c++ bzip2 autoconf gmp-devel
+	yum install make mingw64-gcc mingw64-gcc-c++ mingw32-gcc mingw32-gcc-c++ gcc gcc-c++ bzip2 xz autoconf gmp-devel
 
 elif hash pacman 2>/dev/null; then
 
 	# Things have changed with Arch and this is now broken :/
-	pacman -S --needed wget make mingw-w64-binutils mingw-w64-gcc mingw-w64-crt mingw-w64-headers mingw-w64-winpthreads gcc bzip2 git autoconf texinfo
+	pacman -S --needed wget make mingw-w64-binutils mingw-w64-gcc mingw-w64-crt mingw-w64-headers mingw-w64-winpthreads gcc bzip2 xz git autoconf texinfo
 
 fi
 
