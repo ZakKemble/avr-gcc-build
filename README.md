@@ -1,5 +1,4 @@
-AVR-GCC
-=======
+# AVR-GCC
 
 This is where I'll be uploading builds of AVR-GCC for Windows 32 bit, 64 bit and Linux 64 bit, which will also include Binutils, AVR-LibC, AVRDUDE, Make and GDB. I'll be trying to keep the builds up to date with the latest tool releases when I can.
 
@@ -16,6 +15,12 @@ Upgrading the Arduino IDE is pretty easy, though there could be some incompatibi
 5. Move the extracted folder from earlier to the `tools` folder and rename it to `avr`
 6. Copy `bin/avrdude.exe` and `builtin_tools_versions.txt` files and `etc` folder from the old `avr` folder to the new one
 7. Done! Open up the Arduino IDE, load up the Blink example, upload it to your Arduino and make sure the LED is blinking!
+
+## Docker
+
+`docker compose build`
+
+`docker run --rm -it -v $(pwd)/avr-gcc-build-output:/omgwtfbbq [IMAGE NAME]`
 
 ---
 
