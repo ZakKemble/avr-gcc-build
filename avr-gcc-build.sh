@@ -88,6 +88,16 @@ OPTS_GDB="
 
 OPTS_LIBC=""
 
+if [ $BUILD_LIBC -eq 1 ] && ([ $FOR_LINUX -ne 1 ] || [ $BUILD_GCC -ne 1 ]); then
+	echo "Error: Cannot build libc without also building GCC for Linux"
+	exit 1
+fi
+
+if [ $BUILD_GCC -eq 1 ] && [ $BUILD_BINUTILS -ne 1 ]; then
+	echo "Error: Cannot build GCC without binutils"
+	exit 1
+fi
+
 # Install packages
 if hash apt 2>/dev/null; then
 
@@ -214,12 +224,26 @@ if [ $BUILD_BINUTILS -eq 1 ]; then
 	mkdir -p $NAME_BINUTILS/obj-avr
 	cd $NAME_BINUTILS/obj-avr
 
-	log "Making for Linux..."
-	[ $FOR_LINUX -eq 1 ] && confMake "$PREFIX_GCC_LINUX" "$OPTS_BINUTILS"
-	log "Making for Windows x86..."
-	[ $FOR_WINX86 -eq 1 ] && confMake "$PREFIX_GCC_WINX86" "$OPTS_BINUTILS" --host=$HOST_WINX86
-	log "Making for Windows x64..."
-	[ $FOR_WINX64 -eq 1 ] && confMake "$PREFIX_GCC_WINX64" "$OPTS_BINUTILS" --host=$HOST_WINX64
+	if [ $FOR_LINUX -eq 1 ]; then
+		log "Making for Linux..."
+		confMake "$PREFIX_GCC_LINUX" "$OPTS_BINUTILS"
+	else
+		log "Skipping for Linux..."
+	fi
+
+	if [ $FOR_WINX86 -eq 1 ]; then
+		log "Making for Windows x86..."
+		confMake "$PREFIX_GCC_WINX86" "$OPTS_BINUTILS" --host=$HOST_WINX86
+	else
+		log "Skipping for Windows x86..."
+	fi
+
+	if [ $FOR_WINX64 -eq 1 ]; then
+		log "Making for Windows x64..."
+		confMake "$PREFIX_GCC_WINX64" "$OPTS_BINUTILS" --host=$HOST_WINX64
+	else
+		log "Skipping for Windows x86..."
+	fi
 
 	cd ../../
 else
@@ -233,7 +257,7 @@ if [ $BUILD_GCC -eq 1 ]; then
 	tar xf $NAME_GCC.tar.xz
 	mkdir -p $NAME_GCC/obj-avr
 	cd $NAME_GCC
-	
+
 	log "Getting prerequisites..."
 	chmod +x ./contrib/download_prerequisites
 	./contrib/download_prerequisites
@@ -241,12 +265,26 @@ if [ $BUILD_GCC -eq 1 ]; then
 	cd obj-avr
 	# fixGCCAVR
 
-	log "Making for Linux..."
-	[ $FOR_LINUX -eq 1 ] && confMake "$PREFIX_GCC_LINUX" "$OPTS_GCC"
-	log "Making for Windows x86..."
-	[ $FOR_WINX86 -eq 1 ] && confMake "$PREFIX_GCC_WINX86" "$OPTS_GCC" --host=$HOST_WINX86
-	log "Making for Windows x64..."
-	[ $FOR_WINX64 -eq 1 ] && confMake "$PREFIX_GCC_WINX64" "$OPTS_GCC" --host=$HOST_WINX64
+	if [ $FOR_LINUX -eq 1 ]; then
+		log "Making for Linux..."
+		confMake "$PREFIX_GCC_LINUX" "$OPTS_GCC"
+	else
+		log "Skipping for Linux..."
+	fi
+
+	if [ $FOR_WINX86 -eq 1 ]; then
+		log "Making for Windows x86..."
+		confMake "$PREFIX_GCC_WINX86" "$OPTS_GCC" --host=$HOST_WINX86
+	else
+		log "Skipping for Windows x86..."
+	fi
+
+	if [ $FOR_WINX64 -eq 1 ]; then
+		log "Making for Windows x64..."
+		confMake "$PREFIX_GCC_WINX64" "$OPTS_GCC" --host=$HOST_WINX64
+	else
+		log "Skipping for Windows x86..."
+	fi
 
 	cd ../../
 else
@@ -270,10 +308,12 @@ if [ $BUILD_GDB -eq 1 ]; then
 		cd $NAME_GDB/obj-avr
 		confMake "$PREFIX_GCC_LINUX" "$OPTS_GDB"
 		cd ../../
+	else
+		log "Skipping for Linux"
 	fi
-	
+
 	# libgmp needs to be installed into the host compiler location since --with-gmp= option doesn't seem to be working on GDB
-	
+
 	if [ $FOR_WINX86 -eq 1 ]; then
 		log "Making for Windows x86..."
 
@@ -286,6 +326,8 @@ if [ $BUILD_GDB -eq 1 ]; then
 		confMake "$PREFIX_GCC_WINX86" "$OPTS_GDB" --host=$HOST_WINX86
 
 		cd ../../
+	else
+		log "Skipping for Windows x86..."
 	fi
 
 	if [ $FOR_WINX64 -eq 1 ]; then
@@ -300,8 +342,10 @@ if [ $BUILD_GDB -eq 1 ]; then
 		confMake "$PREFIX_GCC_WINX64" "$OPTS_GDB" --host=$HOST_WINX64
 
 		cd ../../
+	else
+		log "Skipping for Windows x64..."
 	fi
-	
+
 else
 	log "Skipping GDB..."
 fi
@@ -321,7 +365,7 @@ if [ $BUILD_LIBC -eq 1 ]; then
 	fi
 	mkdir -p $NAME_LIBC/obj-avr
 	cd $NAME_LIBC/obj-avr
-	
+
 	log "Making..."
 	confMake "$PREFIX_LIBC" "$OPTS_LIBC" --host=avr
 
