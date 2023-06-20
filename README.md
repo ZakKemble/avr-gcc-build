@@ -63,3 +63,9 @@ Change environment variables by passing the `-e` option when running the Docker 
 ```
 docker run --rm -it -v "$(pwd)"/output:/output -e VER_GCC="10.1.0" -e BUILD_GDB=0 avrgccbuild
 ```
+
+## FAQs
+
+### avr-size does not show percent used / is missing the -C option
+
+Use `avr-objdump -Pmem-usage <yourfirmware>.elf` instead. [More info](https://web.archive.org/web/20211026214736/https://www.avrfreaks.net/forum/where-does-avr-size-get-data-supported-devices)
