@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Project: avr-gcc-build
-# Author: Zak Kemble, contact@zakkemble.net
-# Copyright: (C) 2022 by Zak Kemble
+# Author: Zak Kemble
+# Copyright: (C) 2023 by Zak Kemble
 # Web: https://blog.zakkemble.net/avr-gcc-builds/
 
 # License:
@@ -44,9 +44,9 @@ BUILD_GDB=${BUILD_GDB:-1}
 # Build AVR-LibC (requires AVR-GCC)
 BUILD_LIBC=${BUILD_LIBC:-1}
 
-NAME_BINUTILS="binutils-2.38"
-NAME_GCC="gcc-12.1.0"
-NAME_GDB="gdb-12.1"
+NAME_BINUTILS="binutils-${VER_BINUTILS:-2.38}"
+NAME_GCC="gcc-${VER_GCC:-12.1.0}"
+NAME_GDB="gdb-${VER_GDB:-12.1}"
 NAME_GMP="gmp-6.2.1" # GDB 11 and newer needs libgmp
 NAME_LIBC="avr-libc3.git" # https://github.com/ZakKemble/avr-libc3
 COMMIT_LIBC="d09c2a61764aced3274b6dde4399e11b0aee4a87"

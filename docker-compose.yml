@@ -1,5 +1,0 @@
-
-services:
-  avr-gcc-build:
-    build: .
-    stop_signal: SIGINT

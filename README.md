@@ -18,12 +18,48 @@ Upgrading the Arduino IDE is pretty easy, though there could be some incompatibi
 
 ## Docker
 
-`docker compose build`
+The script can be ran by itself or within a Docker container.
 
-`docker run --rm -it -v $(pwd)/avr-gcc-build-output:/omgwtfbbq [IMAGE NAME]`
+### Build Image
 
----
+```
+docker build -t avrgccbuild .
+```
 
-Zak Kemble
+### Run Container
 
-contact@zakkemble.net
+```
+docker run --rm -it -v "$(pwd)"/output:/output avrgccbuild
+```
+
+On Windows replace `$(pwd)` with `%cd%`:
+
+```
+docker run --rm -it -v "%cd%"/output:/output avrgccbuild
+```
+
+You will find the built toolchains in the `output` directory of your current working directory.
+
+The build script automatically merges the `avr-libc` directory with each of the toolchain folders, so you can delete it when it's all done.
+
+### Environment Variables
+
+|Variable|Default|Description|
+|---|---|---|
+|`JOBCOUNT`|Number of CPU cores your system has|More jobs require more RAM, so if you get errors like `collect2: fatal error: ld terminated with signal 9 [Killed]` then you may need to reduce the job count|
+|`VER_GCC`|`12.1.0`|GCC version|
+|`VER_BINUTILS`|`2.38`|Binutils version|
+|`VER_GDB`|`12.1`|GDB version|
+|`FOR_LINUX`|`1`|Build for Linux. A Linux AVR-GCC toolchain is required to build a Windows toolchain. If the Linux toolchain has already been built then you can set this to `0`. **This is a bit broken at the moment and should stay as `1`**|
+|`FOR_WINX86`|`1`|Build for 32 bit Windows|
+|`FOR_WINX64`|`1`|Build for 64 bit Windows|
+|`BUILD_BINUTILS`|`1`|Build Binutils for selected OSs|
+|`BUILD_GCC`|`1`|Build GCC for selected OSs (requires AVR-Binutils)|
+|`BUILD_GDB`|`1`|Build GDB for selected OSs|
+|`BUILD_LIBC`|`1`|Build AVR-LibC (requires AVR-GCC)|
+
+Change environment variables by passing the `-e` option when running the Docker container:
+
+```
+docker run --rm -it -v "$(pwd)"/output:/output -e VER_GCC="10.1.0" -e BUILD_GDB=0 avrgccbuild
+```
