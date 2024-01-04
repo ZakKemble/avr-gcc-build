@@ -95,32 +95,7 @@ log()
 
 installPackages()
 {
-	if hash apt 2>/dev/null; then
-
-		# This works for Debian 8 and Ubuntu 16.04
-		apt install wget make mingw-w64 gcc g++ bzip2 xz-utils git autoconf texinfo libgmp-dev
-
-	elif hash yum 2>/dev/null; then
-
-		# This works for CentOS 7
-		yum install wget git texinfo
-
-		rpm -q epel-release-7-6.noarch >/dev/null
-		if [ $? -ne 0 ]; then
-			# EPEL is for the MinGW stuff
-			rm -f epel-release-7-6.noarch.rpm
-			wget https://www.mirrorservice.org/sites/dl.fedoraproject.org/pub/epel//7/x86_64/e/epel-release-7-6.noarch.rpm
-			rpm -Uvh epel-release-7-6.noarch.rpm
-		fi
-
-		yum install make mingw64-gcc mingw64-gcc-c++ mingw32-gcc mingw32-gcc-c++ gcc gcc-c++ bzip2 xz autoconf gmp-devel
-
-	elif hash pacman 2>/dev/null; then
-
-		# Things have changed with Arch and this is now broken :/
-		pacman -S --needed wget make mingw-w64-binutils mingw-w64-gcc mingw-w64-crt mingw-w64-headers mingw-w64-winpthreads gcc bzip2 xz git autoconf texinfo
-
-	fi
+	apt install wget make mingw-w64 gcc g++ bzip2 xz-utils git autoconf texinfo libgmp-dev
 }
 
 makeDir()
