@@ -18,4 +18,5 @@ RUN chmod +x avr-gcc-build.sh
 CMD ./avr-gcc-build.sh \
 	; echo "Moving toolchains to /output/..." \
 	; mv /omgwtfbbq/* /output/ \
+	; mv ./avr-gcc-build.log /output/ \
 	; echo "Done"
