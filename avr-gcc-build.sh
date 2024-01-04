@@ -1,11 +1,9 @@
 #!/bin/bash
 
-# Project: avr-gcc-build
-# Author: Zak Kemble
-# Copyright: (C) 2023 by Zak Kemble
-# Web: https://blog.zakkemble.net/avr-gcc-builds/
-
-# License:
+# avr-gcc-build
+# https://blog.zakkemble.net/avr-gcc-builds/
+# https://github.com/ZakKemble/avr-gcc-build
+# Copyright (C) 2024, Zak Kemble
 # Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)
 # http://creativecommons.org/licenses/by-sa/4.0/
 
@@ -18,7 +16,7 @@
 
 # For optimum compile time this should generally be set to the number of CPU cores your machine has.
 # Some systems with not much RAM may fail with "collect2: fatal error: ld terminated with signal 9 [Killed]", if this happens try reducing the JOBCOUNT value or add more RAM.
-# In my case using GCC 8.3.0 on Debian 10 with 2GB RAM is fine, but Debian 11 and GCC 10.2.1 needs 5.5GB
+# In my case using GCC 8.3.0 on Debian 10 with 2GB RAM was fine, but Debian 11 and GCC 10.2.1 needed 5.5GB
 JOBCOUNT=${JOBCOUNT:-$(getconf _NPROCESSORS_ONLN)}
 
 # Build for Linux
@@ -88,44 +86,41 @@ OPTS_GDB="
 
 OPTS_LIBC=""
 
-# Install packages
-if hash apt 2>/dev/null; then
-
-	# This works for Debian 8 and Ubuntu 16.04
-	apt install wget make mingw-w64 gcc g++ bzip2 xz-utils git autoconf texinfo libgmp-dev
-
-elif hash yum 2>/dev/null; then
-
-	# This works for CentOS 7
-	yum install wget git texinfo
-
-	rpm -q epel-release-7-6.noarch >/dev/null
-	if [ $? -ne 0 ]; then
-		# EPEL is for the MinGW stuff
-		rm -f epel-release-7-6.noarch.rpm
-		wget https://www.mirrorservice.org/sites/dl.fedoraproject.org/pub/epel//7/x86_64/e/epel-release-7-6.noarch.rpm
-		rpm -Uvh epel-release-7-6.noarch.rpm
-	fi
-
-	yum install make mingw64-gcc mingw64-gcc-c++ mingw32-gcc mingw32-gcc-c++ gcc gcc-c++ bzip2 xz autoconf gmp-devel
-
-elif hash pacman 2>/dev/null; then
-
-	# Things have changed with Arch and this is now broken :/
-	pacman -S --needed wget make mingw-w64-binutils mingw-w64-gcc mingw-w64-crt mingw-w64-headers mingw-w64-winpthreads gcc bzip2 xz git autoconf texinfo
-
-fi
-
-# Stop on errors
-set -e
-
-TIME_START=$(date +%s)
-
 LOG_DIR=$(pwd)
 log()
 {
 	echo "$1"
 	echo "[$(date +"%d %b %y %H:%M:%S")]: $1" >> "$LOG_DIR/avr-gcc-build.log"
+}
+
+installPackages()
+{
+	if hash apt 2>/dev/null; then
+
+		# This works for Debian 8 and Ubuntu 16.04
+		apt install wget make mingw-w64 gcc g++ bzip2 xz-utils git autoconf texinfo libgmp-dev
+
+	elif hash yum 2>/dev/null; then
+
+		# This works for CentOS 7
+		yum install wget git texinfo
+
+		rpm -q epel-release-7-6.noarch >/dev/null
+		if [ $? -ne 0 ]; then
+			# EPEL is for the MinGW stuff
+			rm -f epel-release-7-6.noarch.rpm
+			wget https://www.mirrorservice.org/sites/dl.fedoraproject.org/pub/epel//7/x86_64/e/epel-release-7-6.noarch.rpm
+			rpm -Uvh epel-release-7-6.noarch.rpm
+		fi
+
+		yum install make mingw64-gcc mingw64-gcc-c++ mingw32-gcc mingw32-gcc-c++ gcc gcc-c++ bzip2 xz autoconf gmp-devel
+
+	elif hash pacman 2>/dev/null; then
+
+		# Things have changed with Arch and this is now broken :/
+		pacman -S --needed wget make mingw-w64-binutils mingw-w64-gcc mingw-w64-crt mingw-w64-headers mingw-w64-winpthreads gcc bzip2 xz git autoconf texinfo
+
+	fi
 }
 
 makeDir()
@@ -157,46 +152,46 @@ fixGCCAVR()
 	echo "$ORIGINAL" >> ../gcc/config/avr/avr.c
 }
 
-log "Start"
+cleanup()
+{
+	log "Clearing output directories..."
+	[ $FOR_LINUX -eq 1 ] && makeDir "$PREFIX_GCC_LINUX"
+	[ $FOR_WINX86 -eq 1 ] && makeDir "$PREFIX_GCC_WINX86"
+	[ $FOR_WINX64 -eq 1 ] && makeDir "$PREFIX_GCC_WINX64"
+	[ $BUILD_LIBC -eq 1 ] && makeDir "$PREFIX_LIBC"
 
-log "Clearing output directories..."
-[ $FOR_LINUX -eq 1 ] && makeDir "$PREFIX_GCC_LINUX"
-[ $FOR_WINX86 -eq 1 ] && makeDir "$PREFIX_GCC_WINX86"
-[ $FOR_WINX64 -eq 1 ] && makeDir "$PREFIX_GCC_WINX64"
-[ $BUILD_LIBC -eq 1 ] && makeDir "$PREFIX_LIBC"
+	log "Clearing old downloads..."
+	rm -f $NAME_BINUTILS.tar.xz
+	rm -rf $NAME_BINUTILS
+	rm -f $NAME_GCC.tar.xz
+	rm -rf $NAME_GCC
+	rm -f $NAME_GDB.tar.xz
+	rm -rf $NAME_GDB
+	rm -f $NAME_GMP.tar.xz
+	rm -rf $NAME_GMP
+	rm -f $NAME_MPFR.tar.xz
+	rm -rf $NAME_MPFR
+	rm -f $NAME_LIBC.tar.bz2
+	rm -rf $NAME_LIBC
+}
 
-log "Clearing old downloads..."
-rm -f $NAME_BINUTILS.tar.xz
-rm -rf $NAME_BINUTILS
-rm -f $NAME_GCC.tar.xz
-rm -rf $NAME_GCC
-rm -f $NAME_GDB.tar.xz
-rm -rf $NAME_GDB
-rm -f $NAME_GMP.tar.xz
-rm -rf $NAME_GMP
-rm -f $NAME_LIBC.tar.bz2
-rm -rf $NAME_LIBC
-
-log "Downloading sources..."
-[ $BUILD_BINUTILS -eq 1 ] && wget https://ftpmirror.gnu.org/binutils/$NAME_BINUTILS.tar.xz
-[ $BUILD_GCC -eq 1 ] && wget https://ftpmirror.gnu.org/gcc/$NAME_GCC/$NAME_GCC.tar.xz
-if [ $BUILD_GDB -eq 1 ]; then
-	wget https://ftpmirror.gnu.org/gdb/$NAME_GDB.tar.xz
-	[ $FOR_WINX86 -eq 1 ] || [ $FOR_WINX64 -eq 1 ] && wget https://ftpmirror.gnu.org/gmp/$NAME_GMP.tar.xz
-fi
-if [ $BUILD_LIBC -eq 1 ]; then
-	if [ "$NAME_LIBC" = "avr-libc3.git" ]; then
-		git clone https://github.com/ZakKemble/$NAME_LIBC "$NAME_LIBC"
-	else
-		wget http://download.savannah.gnu.org/releases/avr-libc/$NAME_LIBC.tar.bz2
+downloadSources()
+{
+	log "Downloading sources..."
+	[ $BUILD_BINUTILS -eq 1 ] && wget https://ftpmirror.gnu.org/binutils/$NAME_BINUTILS.tar.xz
+	[ $BUILD_GCC -eq 1 ] && wget https://ftpmirror.gnu.org/gcc/$NAME_GCC/$NAME_GCC.tar.xz
+	if [ $BUILD_GDB -eq 1 ]; then
+		wget https://ftpmirror.gnu.org/gdb/$NAME_GDB.tar.xz
+		[ $FOR_WINX86 -eq 1 ] || [ $FOR_WINX64 -eq 1 ] && wget https://ftpmirror.gnu.org/gmp/$NAME_GMP.tar.xz
 	fi
-fi
-
-PATH="$PREFIX_GCC_LINUX"/bin:"$PATH"
-export PATH
-
-CC=""
-export CC
+	if [ $BUILD_LIBC -eq 1 ]; then
+		if [ "$NAME_LIBC" = "avr-libc3.git" ]; then
+			git clone https://github.com/ZakKemble/$NAME_LIBC "$NAME_LIBC"
+		else
+			wget http://download.savannah.gnu.org/releases/avr-libc/$NAME_LIBC.tar.bz2
+		fi
+	fi
+}
 
 confMake()
 {
@@ -206,8 +201,13 @@ confMake()
 	rm -rf *
 }
 
-# Make AVR-Binutils
-if [ $BUILD_BINUTILS -eq 1 ]; then
+buildBinutils()
+{
+	if [ $BUILD_BINUTILS -ne 1 ]; then
+		log "Skipping Binutils..."
+		return 0
+	fi
+
 	log "***Binutils***"
 	log "Extracting..."
 	tar xf $NAME_BINUTILS.tar.xz
@@ -222,12 +222,15 @@ if [ $BUILD_BINUTILS -eq 1 ]; then
 	[ $FOR_WINX64 -eq 1 ] && confMake "$PREFIX_GCC_WINX64" "$OPTS_BINUTILS" --host=$HOST_WINX64
 
 	cd ../../
-else
-	log "Skipping Binutils..."
-fi
+}
 
-# Make AVR-GCC
-if [ $BUILD_GCC -eq 1 ]; then
+buildGCC()
+{
+	if [ $BUILD_GCC -ne 1 ]; then
+		log "Skipping GCC..."
+		return 0
+	fi
+
 	log "***GCC***"
 	log "Extracting..."
 	tar xf $NAME_GCC.tar.xz
@@ -249,12 +252,15 @@ if [ $BUILD_GCC -eq 1 ]; then
 	[ $FOR_WINX64 -eq 1 ] && confMake "$PREFIX_GCC_WINX64" "$OPTS_GCC" --host=$HOST_WINX64
 
 	cd ../../
-else
-	log "Skipping GCC..."
-fi
+}
 
-# Make GDB
-if [ $BUILD_GDB -eq 1 ]; then
+buildGDB()
+{
+	if [ $BUILD_GDB -ne 1 ]; then
+		log "Skipping GDB..."
+		return 0
+	fi
+
 	log "***GDB (and GMP for Windows)***"
 
 	log "Extracting..."
@@ -301,13 +307,15 @@ if [ $BUILD_GDB -eq 1 ]; then
 
 		cd ../../
 	fi
-	
-else
-	log "Skipping GDB..."
-fi
+}
 
-# Make AVR-LibC
-if [ $BUILD_LIBC -eq 1 ]; then
+buildAVRLIBC()
+{
+	if [ $BUILD_LIBC -ne 1 ]; then
+		log "Skipping AVR-LibC..."
+		return 0
+	fi
+
 	log "***AVR-LibC***"
 	if [ "$NAME_LIBC" = "avr-libc3.git" ]; then
 		log "Preparing..."
@@ -326,9 +334,29 @@ if [ $BUILD_LIBC -eq 1 ]; then
 	confMake "$PREFIX_LIBC" "$OPTS_LIBC" --host=avr
 
 	cd ../../
-else
-	log "Skipping AVR-LibC..."
-fi
+}
+
+installPackages
+
+# Stop on errors
+set -e
+
+log "Start"
+
+TIME_START=$(date +%s)
+
+PATH="$PREFIX_GCC_LINUX"/bin:"$PATH"
+export PATH
+
+CC=""
+export CC
+
+cleanup
+downloadSources
+buildBinutils
+buildGCC
+buildGDB
+buildAVRLIBC
 
 TIME_END=$(date +%s)
 TIME_RUN=$(($TIME_END - $TIME_START))
