@@ -178,13 +178,20 @@ cleanup()
 downloadSources()
 {
 	log "Downloading sources..."
-	[ $BUILD_BINUTILS -eq 1 ] && wget https://ftpmirror.gnu.org/binutils/$NAME_BINUTILS.tar.xz
-	[ $BUILD_GCC -eq 1 ] && wget https://ftpmirror.gnu.org/gcc/$NAME_GCC/$NAME_GCC.tar.xz
+	[ $BUILD_BINUTILS -eq 1 ] && log "$NAME_BINUTILS" && wget https://ftpmirror.gnu.org/binutils/$NAME_BINUTILS.tar.xz
+	[ $BUILD_GCC -eq 1 ] && log "$NAME_GCC" && wget https://ftpmirror.gnu.org/gcc/$NAME_GCC/$NAME_GCC.tar.xz
 	if [ $BUILD_GDB -eq 1 ]; then
+		log "$NAME_GDB"
 		wget https://ftpmirror.gnu.org/gdb/$NAME_GDB.tar.xz
-		[ $FOR_WINX86 -eq 1 ] || [ $FOR_WINX64 -eq 1 ] && wget https://ftpmirror.gnu.org/gmp/$NAME_GMP.tar.xz
+		if [ $FOR_WINX86 -eq 1 ] || [ $FOR_WINX64 -eq 1 ]; then
+			log "$NAME_GMP"
+			wget https://ftpmirror.gnu.org/gmp/$NAME_GMP.tar.xz
+			log "$NAME_MPFR"
+			wget https://ftpmirror.gnu.org/mpfr/$NAME_MPFR.tar.xz
+		fi
 	fi
 	if [ $BUILD_LIBC -eq 1 ]; then
+		log "$NAME_LIBC"
 		if [ "$NAME_LIBC" = "avr-libc3.git" ]; then
 			git clone https://github.com/ZakKemble/$NAME_LIBC "$NAME_LIBC"
 		else
@@ -203,35 +210,26 @@ confMake()
 
 buildBinutils()
 {
-	if [ $BUILD_BINUTILS -ne 1 ]; then
-		log "Skipping Binutils..."
-		return 0
-	fi
-
 	log "***Binutils***"
+	[ $BUILD_BINUTILS -ne 1 ] && log "(Skipping)" && return 0
+
 	log "Extracting..."
 	tar xf $NAME_BINUTILS.tar.xz
 	mkdir -p $NAME_BINUTILS/obj-avr
 	cd $NAME_BINUTILS/obj-avr
 
-	log "Making for Linux..."
-	[ $FOR_LINUX -eq 1 ] && confMake "$PREFIX_GCC_LINUX" "$OPTS_BINUTILS"
-	log "Making for Windows x86..."
-	[ $FOR_WINX86 -eq 1 ] && confMake "$PREFIX_GCC_WINX86" "$OPTS_BINUTILS" --host=$HOST_WINX86
-	log "Making for Windows x64..."
-	[ $FOR_WINX64 -eq 1 ] && confMake "$PREFIX_GCC_WINX64" "$OPTS_BINUTILS" --host=$HOST_WINX64
+	[ $FOR_LINUX -eq 1 ] && log "Making for Linux..." && confMake "$PREFIX_GCC_LINUX" "$OPTS_BINUTILS"
+	[ $FOR_WINX86 -eq 1 ] && log "Making for Windows x86..." && confMake "$PREFIX_GCC_WINX86" "$OPTS_BINUTILS" --host=$HOST_WINX86
+	[ $FOR_WINX64 -eq 1 ] && log "Making for Windows x64..." && confMake "$PREFIX_GCC_WINX64" "$OPTS_BINUTILS" --host=$HOST_WINX64
 
 	cd ../../
 }
 
 buildGCC()
 {
-	if [ $BUILD_GCC -ne 1 ]; then
-		log "Skipping GCC..."
-		return 0
-	fi
-
 	log "***GCC***"
+	[ $BUILD_GCC -ne 1 ] && log "(Skipping)" && return 0
+
 	log "Extracting..."
 	tar xf $NAME_GCC.tar.xz
 	mkdir -p $NAME_GCC/obj-avr
@@ -244,24 +242,17 @@ buildGCC()
 	cd obj-avr
 	# fixGCCAVR
 
-	log "Making for Linux..."
-	[ $FOR_LINUX -eq 1 ] && confMake "$PREFIX_GCC_LINUX" "$OPTS_GCC"
-	log "Making for Windows x86..."
-	[ $FOR_WINX86 -eq 1 ] && confMake "$PREFIX_GCC_WINX86" "$OPTS_GCC" --host=$HOST_WINX86
-	log "Making for Windows x64..."
-	[ $FOR_WINX64 -eq 1 ] && confMake "$PREFIX_GCC_WINX64" "$OPTS_GCC" --host=$HOST_WINX64
+	[ $FOR_LINUX -eq 1 ] && log "Making for Linux..." && confMake "$PREFIX_GCC_LINUX" "$OPTS_GCC"
+	[ $FOR_WINX86 -eq 1 ] && log "Making for Windows x86..." && confMake "$PREFIX_GCC_WINX86" "$OPTS_GCC" --host=$HOST_WINX86
+	[ $FOR_WINX64 -eq 1 ] && log "Making for Windows x64..." && confMake "$PREFIX_GCC_WINX64" "$OPTS_GCC" --host=$HOST_WINX64
 
 	cd ../../
 }
 
 buildGDB()
 {
-	if [ $BUILD_GDB -ne 1 ]; then
-		log "Skipping GDB..."
-		return 0
-	fi
-
-	log "***GDB (and GMP for Windows)***"
+	log "***GDB (and GMP, MPFR for Windows)***"
+	[ $BUILD_GDB -ne 1 ] && log "(Skipping)" && return 0
 
 	log "Extracting..."
 	tar xf $NAME_GDB.tar.xz
@@ -269,6 +260,8 @@ buildGDB()
 	if [ $FOR_WINX86 -eq 1 ] || [ $FOR_WINX64 -eq 1 ]; then
 		tar xf $NAME_GMP.tar.xz
 		mkdir -p $NAME_GMP/obj
+		tar xf $NAME_MPFR.tar.xz
+		mkdir -p $NAME_MPFR/obj
 	fi
 
 	if [ $FOR_LINUX -eq 1 ]; then
@@ -279,44 +272,35 @@ buildGDB()
 	fi
 	
 	# libgmp needs to be installed into the host compiler location since --with-gmp= option doesn't seem to be working on GDB
-	
-	if [ $FOR_WINX86 -eq 1 ]; then
-		log "Making for Windows x86..."
+	# --with-libgmp-prefix
 
-		# GMP
+	buildGDBWin()
+	{
+		log "GMP..."
 		cd $NAME_GMP/obj
-		confMake /usr/$HOST_WINX86 --host=$HOST_WINX86
-
-		# GDB
-		cd ../../$NAME_GDB/obj-avr
-		confMake "$PREFIX_GCC_WINX86" "$OPTS_GDB" --host=$HOST_WINX86
-
+		confMake /usr/$2 --host=$2
 		cd ../../
-	fi
-
-	if [ $FOR_WINX64 -eq 1 ]; then
-		log "Making for Windows x64..."
-
-		# GMP
-		cd $NAME_GMP/obj
-		confMake /usr/$HOST_WINX64 --host=$HOST_WINX64
-
-		# GDB
-		cd ../../$NAME_GDB/obj-avr
-		confMake "$PREFIX_GCC_WINX64" "$OPTS_GDB" --host=$HOST_WINX64
-
+		
+		log "MPFR..."
+		cd $NAME_MPFR/obj
+		confMake /usr/$2 "--disable-shared --enable-static" --host=$2
 		cd ../../
-	fi
+
+		log "GDB..."
+		cd $NAME_GDB/obj-avr
+		confMake "$1" "$OPTS_GDB" --host=$2
+		cd ../../
+	}
+
+	[ $FOR_WINX86 -eq 1 ] && log "Making for Windows x86..." && buildGDBWin "$PREFIX_GCC_WINX86" $HOST_WINX86
+	[ $FOR_WINX64 -eq 1 ] && log "Making for Windows x64..." && buildGDBWin "$PREFIX_GCC_WINX64" $HOST_WINX64
 }
 
 buildAVRLIBC()
 {
-	if [ $BUILD_LIBC -ne 1 ]; then
-		log "Skipping AVR-LibC..."
-		return 0
-	fi
-
 	log "***AVR-LibC***"
+	[ $BUILD_LIBC -ne 1 ] && log "(Skipping)" && return 0
+
 	if [ "$NAME_LIBC" = "avr-libc3.git" ]; then
 		log "Preparing..."
 		cd $NAME_LIBC
