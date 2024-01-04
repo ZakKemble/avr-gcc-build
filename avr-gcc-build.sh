@@ -25,7 +25,7 @@ JOBCOUNT=${JOBCOUNT:-$(getconf _NPROCESSORS_ONLN)}
 FOR_LINUX=${FOR_LINUX:-1}
 
 # Build for 32 bit Windows
-FOR_WINX86=${FOR_WINX86:-1}
+FOR_WINX86=${FOR_WINX86:-0}
 
 # Build for 64 bit Windows
 FOR_WINX64=${FOR_WINX64:-1}
@@ -42,10 +42,11 @@ BUILD_GDB=${BUILD_GDB:-1}
 # Build AVR-LibC (requires AVR-GCC)
 BUILD_LIBC=${BUILD_LIBC:-1}
 
-NAME_BINUTILS="binutils-${VER_BINUTILS:-2.38}"
-NAME_GCC="gcc-${VER_GCC:-12.1.0}"
-NAME_GDB="gdb-${VER_GDB:-12.1}"
-NAME_GMP="gmp-6.2.1" # GDB 11 and newer needs libgmp
+NAME_BINUTILS="binutils-${VER_BINUTILS:-2.41}"
+NAME_GCC="gcc-${VER_GCC:-13.2.0}"
+NAME_GDB="gdb-${VER_GDB:-14.1}"
+NAME_GMP="gmp-6.3.0" # GDB 11+ needs libgmp
+NAME_MPFR="mpfr-4.2.1" # GDB 14+ needs libmpfr
 NAME_LIBC="avr-libc3.git" # https://github.com/ZakKemble/avr-libc3
 COMMIT_LIBC="d09c2a61764aced3274b6dde4399e11b0aee4a87"
 
@@ -95,7 +96,7 @@ log()
 
 installPackages()
 {
-	apt install wget make mingw-w64 gcc g++ bzip2 xz-utils git autoconf texinfo libgmp-dev
+	apt install wget make mingw-w64 gcc g++ bzip2 xz-utils git autoconf texinfo libgmp-dev libmpfr-dev
 }
 
 makeDir()
@@ -312,11 +313,8 @@ log "Start"
 
 TIME_START=$(date +%s)
 
-PATH="$PREFIX_GCC_LINUX"/bin:"$PATH"
-export PATH
-
-CC=""
-export CC
+export PATH="$PREFIX_GCC_LINUX"/bin:"$PATH"
+export CC=""
 
 cleanup
 downloadSources
