@@ -7,6 +7,32 @@
 # Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)
 # http://creativecommons.org/licenses/by-sa/4.0/
 
+# ++++ Error Handling and Backtracing ++++
+set -eE -o functrace
+
+function backtrace () {
+    local deptn=${#FUNCNAME[@]}
+
+    local start=${1:-1}
+    for ((i=$start; i<$deptn; i++)); do
+        local func="${FUNCNAME[$i]}"
+        local line="${BASH_LINENO[$((i-1))]}"
+        local src="${BASH_SOURCE[$((i-1))]}"
+        printf '%*s' $i '' # indent
+        echo "at: $func(), $src, line $line"
+    done
+}
+
+failure() {
+  local lineno=$1
+  local msg=$2
+  echo "Failed at $lineno: $msg"
+  echo "  pwd: $(pwd)"
+  backtrace 2
+}
+trap 'failure ${LINENO} "$BASH_COMMAND"' ERR
+# ---- Erorr Handling and Backtracing ----
+
 
 # http://www.nongnu.org/avr-libc/user-manual/install_tools.html
 
