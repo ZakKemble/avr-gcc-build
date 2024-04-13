@@ -15,7 +15,8 @@ SCRIPT_FILENAME="$(basename "$FULL_PATH_TO_SCRIPT")"
 # ++++ Error Handling and Backtracing ++++
 set -eE -o functrace
 
-function backtrace () {
+function backtrace()
+{
     local deptn=${#FUNCNAME[@]}
 
     local start=${1:-1}
@@ -28,12 +29,17 @@ function backtrace () {
     done
 }
 
-failure() {
-  local lineno=$1
-  local msg=$2
-  echo "Failed at $lineno: $msg"
-  echo "  pwd: $(pwd)"
-  backtrace 2
+suppressError=0
+
+failure()
+{
+	local lineno=$1
+	local msg=$2
+	if [[ $suppressError -eq 0 ]]; then
+		echo "Failed at $lineno: $msg"
+		echo "  pwd: $(pwd)"
+		backtrace 2
+	fi
 }
 trap 'failure ${LINENO} "$BASH_COMMAND"' ERR
 # ---- Erorr Handling and Backtracing ----
@@ -127,9 +133,47 @@ log()
 	echo "[$(date +"%d %b %y %H:%M:%S")]: $1" >> "$LOG_DIR/avr-gcc-build.log"
 }
 
+disableErrorStop()
+{
+	set +e
+	suppressError=1
+}
+
+enableErrorStop()
+{
+	set -e
+	suppressError=0
+}
+
 installPackages()
 {
-	apt install wget make mingw-w64 gcc g++ bzip2 xz-utils git autoconf texinfo libgmp-dev libmpfr-dev
+	local requiredPackages=("wget" "make" "mingw-w64" "gcc" "g++" "bzip2" "xz-utils" "git" "autoconf" "texinfo" "libgmp-dev" "libmpfr-dev")
+
+	if [[ $EUID -ne 0 ]]; then
+		log "Not running as root user. Checking whether all required packages are installed..."
+		local packageMissing=0
+		for package in "${requiredPackages[@]}"
+		do
+			disableErrorStop # disable stop on error for one line
+			dpkg -s "$package" > /dev/null 2>&1
+			local checkPackageResult=$?
+			enableErrorStop
+			if [[ $checkPackageResult -ne 0 ]]; then
+				echo "ERROR: Package \"$package\" is not installed. But it is required."
+				packageMissing=1
+			fi
+		done
+
+		if [[ $packageMissing -ne 0 ]]; then
+			echo "Not all required packages are installed. You need to install them manually or run the script with root (sudo)"
+			exit 2
+		fi
+
+		echo "All required packages are installed. Continuing..."
+	else
+		log "Running as root user. Installing required packages via apt..."
+		apt install "${requiredPackages[@]}"
+	fi
 }
 
 makeDir()
@@ -350,9 +394,6 @@ buildAVRLIBC()
 }
 
 installPackages
-
-# Stop on errors
-set -e
 
 log "Start"
 
