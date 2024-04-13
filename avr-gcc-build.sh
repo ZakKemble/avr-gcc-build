@@ -7,6 +7,11 @@
 # Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)
 # http://creativecommons.org/licenses/by-sa/4.0/
 
+
+FULL_PATH_TO_SCRIPT="$(realpath "${BASH_SOURCE[-1]}")"
+SCRIPT_DIRECTORY="$(dirname "$FULL_PATH_TO_SCRIPT")"
+SCRIPT_FILENAME="$(basename "$FULL_PATH_TO_SCRIPT")"
+
 # ++++ Error Handling and Backtracing ++++
 set -eE -o functrace
 
@@ -77,7 +82,8 @@ NAME_LIBC="avr-libc3.git" # https://github.com/ZakKemble/avr-libc3
 COMMIT_LIBC="d09c2a61764aced3274b6dde4399e11b0aee4a87"
 
 # Output locations for built toolchains
-BASE=${BASE:-/omgwtfbbq/}
+BASE=${BASE:-${SCRIPT_DIRECTORY}/build/}
+PREFIX_FOR_TMP=${BASE}tmp
 PREFIX_GCC_LINUX=${BASE}avr-${NAME_GCC}-x64-linux
 PREFIX_GCC_WINX86=${BASE}avr-${NAME_GCC}-x86-windows
 PREFIX_GCC_WINX64=${BASE}avr-${NAME_GCC}-x64-windows
@@ -272,25 +278,22 @@ buildGDB()
 		confMake "$PREFIX_GCC_LINUX" "$OPTS_GDB"
 		cd ../../
 	fi
-	
-	# libgmp needs to be installed into the host compiler location since --with-gmp= option doesn't seem to be working on GDB
-	# --with-libgmp-prefix
 
 	buildGDBWin()
 	{
 		log "GMP..."
 		cd $NAME_GMP/obj
-		confMake /usr/$2 --host=$2
+		confMake $PREFIX_FOR_TMP/$2 --host=$2
 		cd ../../
 		
 		log "MPFR..."
 		cd $NAME_MPFR/obj
-		confMake /usr/$2 "--disable-shared --enable-static" --host=$2
+		confMake $PREFIX_FOR_TMP/$2 "--with-gmp=$PREFIX_FOR_TMP/$2 --disable-shared --enable-static" --host=$2
 		cd ../../
 
 		log "GDB..."
 		cd $NAME_GDB/obj-avr
-		confMake "$1" "$OPTS_GDB" --host=$2
+		confMake "$1" "--with-gmp=$PREFIX_FOR_TMP/$2 --with-mpfr=$PREFIX_FOR_TMP/$2 $OPTS_GDB" --host=$2
 		cd ../../
 	}
 
