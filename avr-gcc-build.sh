@@ -79,7 +79,8 @@ NAME_GDB="gdb-${VER_GDB:-14.1}"
 NAME_GMP="gmp-6.3.0" # GDB 11+ needs libgmp
 NAME_MPFR="mpfr-4.2.1" # GDB 14+ needs libmpfr
 NAME_LIBC="avr-libc3.git" # https://github.com/ZakKemble/avr-libc3
-COMMIT_LIBC="d09c2a61764aced3274b6dde4399e11b0aee4a87"
+COMMIT_LIBC="HEAD" # latest commit
+#"d09c2a61764aced3274b6dde4399e11b0aee4a87" # commit with content from latest SVN version
 
 # Output locations for built toolchains
 BASE=${BASE:-${SCRIPT_DIRECTORY}/build/}
@@ -278,7 +279,7 @@ buildGDB()
 		confMake "$PREFIX_GCC_LINUX" "$OPTS_GDB"
 		cd ../../
 	fi
-
+	
 	buildGDBWin()
 	{
 		log "GMP..."
@@ -301,6 +302,11 @@ buildGDB()
 	[ $FOR_WINX64 -eq 1 ] && log "Making for Windows x64..." && buildGDBWin "$PREFIX_GCC_WINX64" $HOST_WINX64
 }
 
+copyFileCreateParent() {
+	# intentionally not using dirname cmd so we can use / at the end to not needing to supply the target file name
+    mkdir -p ${2%/*} && cp "$1" "$2"
+}
+
 buildAVRLIBC()
 {
 	log "***AVR-LibC***"
@@ -312,6 +318,16 @@ buildAVRLIBC()
 		git checkout $COMMIT_LIBC
 		./bootstrap
 		cd ..
+		
+		
+		# install target is broken for newer versions: sub directories of avr/include are not copied
+		# so we need to do this ourselves
+		log "Copying additional include files..."
+		oldPWD=$(pwd)
+		cd $NAME_LIBC/include/avr
+		export -f copyFileCreateParent
+		find . -name "*.h" -type f -exec bash -c "copyFileCreateParent \"{}\" \"$PREFIX_LIBC/{}\"" \; 
+		cd $oldPWD
 	else
 		log "Extracting..."
 		bunzip2 -c $NAME_LIBC.tar.bz2 | tar xf -
