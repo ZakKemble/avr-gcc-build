@@ -75,13 +75,12 @@ BUILD_GDB=${BUILD_GDB:-1}
 # Build AVR-LibC (requires AVR-GCC)
 BUILD_LIBC=${BUILD_LIBC:-1}
 
-NAME_BINUTILS="binutils-${VER_BINUTILS:-2.41}"
-NAME_GCC="gcc-${VER_GCC:-13.2.0}"
-NAME_GDB="gdb-${VER_GDB:-14.1}"
+NAME_BINUTILS="binutils-${VER_BINUTILS:-2.42}"
+NAME_GCC="gcc-${VER_GCC:-14.1.0}"
+NAME_GDB="gdb-${VER_GDB:-14.2}"
 NAME_GMP="gmp-6.3.0" # GDB 11+ needs libgmp
 NAME_MPFR="mpfr-4.2.1" # GDB 14+ needs libmpfr
-NAME_LIBC="avr-libc3.git" # https://github.com/ZakKemble/avr-libc3
-COMMIT_LIBC="d09c2a61764aced3274b6dde4399e11b0aee4a87"
+NAME_LIBC=("avr-libc-2_2_0-release" "avr-libc-2.2.0")
 
 # Output locations for built toolchains
 BASE=${BASE:-${CWD}/build/}
@@ -92,6 +91,12 @@ PREFIX_LIBC=${BASE}avr-libc
 
 HOST_WINX86="i686-w64-mingw32"
 HOST_WINX64="x86_64-w64-mingw32"
+
+# Uncomment the next 2 export lines and replace "--enable-plugin"
+# with "--disable-plugin" in OPTS_GCC for a fully static linux build.
+# NOTE: Plugin support is probably needed for LTO and some other stuff
+#export CFLAGS="-static --static"
+#export CXXFLAGS="${CFLAGS}"
 
 OPTS_BINUTILS="
 	--target=avr
@@ -112,6 +117,7 @@ OPTS_GCC="
 	--enable-plugin
 	--with-gnu-as
 	--with-gnu-ld
+	--without-zstd
 "
 
 OPTS_GDB="
@@ -144,7 +150,7 @@ enableErrorStop()
 
 installPackages()
 {
-	local requiredPackages=("wget" "make" "mingw-w64" "gcc" "g++" "bzip2" "xz-utils" "git" "autoconf" "texinfo" "libgmp-dev" "libmpfr-dev")
+	local requiredPackages=("wget" "make" "mingw-w64" "gcc" "g++" "bzip2" "xz-utils" "autoconf" "texinfo" "libgmp-dev" "libmpfr-dev")
 
 	if [[ $EUID -ne 0 ]]; then
 		log "Not running as root user. Checking whether all required packages are installed..."
@@ -221,8 +227,8 @@ cleanup()
 	rm -rf $NAME_GMP
 	rm -f $NAME_MPFR.tar.xz
 	rm -rf $NAME_MPFR
-	rm -f $NAME_LIBC.tar.bz2
-	rm -rf $NAME_LIBC
+	rm -f ${NAME_LIBC[1]}.tar.bz2
+	rm -rf ${NAME_LIBC[1]}
 }
 
 downloadSources()
@@ -241,12 +247,8 @@ downloadSources()
 		fi
 	fi
 	if [ $BUILD_LIBC -eq 1 ]; then
-		log "$NAME_LIBC"
-		if [ "$NAME_LIBC" = "avr-libc3.git" ]; then
-			git clone https://github.com/ZakKemble/$NAME_LIBC "$NAME_LIBC"
-		else
-			wget http://download.savannah.gnu.org/releases/avr-libc/$NAME_LIBC.tar.bz2
-		fi
+		log "${NAME_LIBC[1]}"
+		wget https://github.com/avrdudes/avr-libc/releases/download/${NAME_LIBC[0]}/${NAME_LIBC[1]}.tar.bz2
 	fi
 }
 
@@ -341,6 +343,10 @@ buildGDB()
 
 	[ $FOR_WINX86 -eq 1 ] && log "Making for Windows x86..." && buildGDBWin "$PREFIX_GCC_WINX86" $HOST_WINX86
 	[ $FOR_WINX64 -eq 1 ] && log "Making for Windows x64..." && buildGDBWin "$PREFIX_GCC_WINX64" $HOST_WINX64
+
+	# For some reason we need some random command here otherwise
+	# the script exits with no error when FOR_WINX64=0
+	echo "" > /dev/null
 }
 
 buildAVRLIBC()
@@ -348,18 +354,10 @@ buildAVRLIBC()
 	log "***AVR-LibC***"
 	[ $BUILD_LIBC -ne 1 ] && log "(Skipping)" && return 0
 
-	if [ "$NAME_LIBC" = "avr-libc3.git" ]; then
-		log "Preparing..."
-		cd $NAME_LIBC
-		git checkout $COMMIT_LIBC
-		./bootstrap
-		cd ..
-	else
-		log "Extracting..."
-		bunzip2 -c $NAME_LIBC.tar.bz2 | tar xf -
-	fi
-	mkdir -p $NAME_LIBC/obj-avr
-	cd $NAME_LIBC/obj-avr
+	log "Extracting..."
+	bunzip2 -c ${NAME_LIBC[1]}.tar.bz2 | tar xf -
+	mkdir -p ${NAME_LIBC[1]}/obj-avr
+	cd ${NAME_LIBC[1]}/obj-avr
 	
 	log "Making..."
 	confMake "$PREFIX_LIBC" "$OPTS_LIBC" --host=avr

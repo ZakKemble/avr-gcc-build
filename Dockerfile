@@ -4,7 +4,7 @@ LABEL repo="https://github.com/ZakKemble/avr-gcc-build"
 WORKDIR /avr-gcc-build
 
 RUN apt update && \
-	apt -y install wget make mingw-w64 gcc g++ bzip2 xz-utils git autoconf texinfo libgmp-dev libmpfr-dev
+	apt -y install wget make mingw-w64 gcc g++ bzip2 xz-utils autoconf texinfo libgmp-dev libmpfr-dev
 
 COPY avr-gcc-build.sh .
 RUN chmod +x avr-gcc-build.sh
