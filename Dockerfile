@@ -12,11 +12,13 @@ RUN chmod +x avr-gcc-build.sh
 
 # Bind mounts from Windows are very slow and seriously impacts build time.
 # So instead of directly mounting the directory that the toolchains are
-# built into (/omgwtfbbq/), we mount to a different directory (/output/)
+# built into (/avr-gcc-build/build/), we mount to a different directory (/output/)
 # and move the toolchains across only once building has completed.
+
+ENV BASE=/avr-gcc-build/build/
 
 CMD ./avr-gcc-build.sh \
 	; echo "Moving toolchains to /output/..." \
-	; mv /omgwtfbbq/* /output/ \
+	; mv ${BASE}* /output/ \
 	; mv ./avr-gcc-build.log /output/ \
 	; echo "Done"

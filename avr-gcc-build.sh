@@ -7,6 +7,39 @@
 # Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)
 # http://creativecommons.org/licenses/by-sa/4.0/
 
+CWD=$(pwd)
+
+# ++++ Error Handling and Backtracing ++++
+set -eE -o functrace
+
+function backtrace()
+{
+    local deptn=${#FUNCNAME[@]}
+    local start=${1:-1}
+    for ((i=$start; i<$deptn; i++)); do
+        local func="${FUNCNAME[$i]}"
+        local line="${BASH_LINENO[$((i-1))]}"
+        local src="${BASH_SOURCE[$((i-1))]}"
+        printf '%*s' $i '' # indent
+        echo "at: $func(), $src, line $line"
+    done
+}
+
+suppressError=0
+
+failure()
+{
+	[ $suppressError -ne 0 ] && return 0
+	local lineno=$1
+	local msg=$2
+	echo "Failed at $lineno: $msg"
+	echo "  pwd: $CWD"
+	backtrace 2
+}
+
+trap 'failure ${LINENO} "$BASH_COMMAND"' ERR
+# ---- Erorr Handling and Backtracing ----
+
 
 # http://www.nongnu.org/avr-libc/user-manual/install_tools.html
 
@@ -51,7 +84,7 @@ NAME_LIBC="avr-libc3.git" # https://github.com/ZakKemble/avr-libc3
 COMMIT_LIBC="d09c2a61764aced3274b6dde4399e11b0aee4a87"
 
 # Output locations for built toolchains
-BASE=${BASE:-/omgwtfbbq/}
+BASE=${BASE:-${CWD}/build/}
 PREFIX_GCC_LINUX=${BASE}avr-${NAME_GCC}-x64-linux
 PREFIX_GCC_WINX86=${BASE}avr-${NAME_GCC}-x86-windows
 PREFIX_GCC_WINX64=${BASE}avr-${NAME_GCC}-x64-windows
@@ -87,16 +120,56 @@ OPTS_GDB="
 
 OPTS_LIBC=""
 
-LOG_DIR=$(pwd)
+TMP_DIR=${CWD}/tmp
+LOG_DIR=${CWD}
+
 log()
 {
 	echo "$1"
 	echo "[$(date +"%d %b %y %H:%M:%S")]: $1" >> "$LOG_DIR/avr-gcc-build.log"
 }
 
+disableErrorStop()
+{
+	set +e
+	suppressError=1
+}
+
+enableErrorStop()
+{
+	set -e
+	suppressError=0
+}
+
 installPackages()
 {
-	apt install wget make mingw-w64 gcc g++ bzip2 xz-utils git autoconf texinfo libgmp-dev libmpfr-dev
+	local requiredPackages=("wget" "make" "mingw-w64" "gcc" "g++" "bzip2" "xz-utils" "git" "autoconf" "texinfo" "libgmp-dev" "libmpfr-dev")
+
+	if [[ $EUID -ne 0 ]]; then
+		log "Not running as root user. Checking whether all required packages are installed..."
+		local packageMissing=0
+		for package in "${requiredPackages[@]}"
+		do
+			disableErrorStop # disable stop on error for one line
+			dpkg -s "$package" > /dev/null 2>&1
+			local checkPackageResult=$?
+			enableErrorStop
+			if [[ $checkPackageResult -ne 0 ]]; then
+				echo "ERROR: Package \"$package\" is not installed. But it is required."
+				packageMissing=1
+			fi
+		done
+
+		if [[ $packageMissing -ne 0 ]]; then
+			echo "Not all required packages are installed. You need to install them manually or run the script with root (sudo)"
+			exit 2
+		fi
+
+		echo "All required packages are installed. Continuing..."
+	else
+		log "Running as root user. Installing required packages via apt..."
+		apt install "${requiredPackages[@]}"
+	fi
 }
 
 makeDir()
@@ -246,25 +319,22 @@ buildGDB()
 		confMake "$PREFIX_GCC_LINUX" "$OPTS_GDB"
 		cd ../../
 	fi
-	
-	# libgmp needs to be installed into the host compiler location since --with-gmp= option doesn't seem to be working on GDB
-	# --with-libgmp-prefix
 
 	buildGDBWin()
 	{
 		log "GMP..."
 		cd $NAME_GMP/obj
-		confMake /usr/$2 --host=$2
+		confMake $TMP_DIR/$2 --host=$2
 		cd ../../
 		
 		log "MPFR..."
 		cd $NAME_MPFR/obj
-		confMake /usr/$2 "--disable-shared --enable-static" --host=$2
+		confMake $TMP_DIR/$2 "--with-gmp=$TMP_DIR/$2 --disable-shared --enable-static" --host=$2
 		cd ../../
 
 		log "GDB..."
 		cd $NAME_GDB/obj-avr
-		confMake "$1" "$OPTS_GDB" --host=$2
+		confMake "$1" "--with-gmp=$TMP_DIR/$2 --with-mpfr=$TMP_DIR/$2 $OPTS_GDB" --host=$2
 		cd ../../
 	}
 
@@ -305,9 +375,6 @@ buildAVRLIBC()
 }
 
 installPackages
-
-# Stop on errors
-set -e
 
 log "Start"
 
