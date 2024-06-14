@@ -7,10 +7,7 @@
 # Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)
 # http://creativecommons.org/licenses/by-sa/4.0/
 
-
-FULL_PATH_TO_SCRIPT="$(realpath "${BASH_SOURCE[-1]}")"
-SCRIPT_DIRECTORY="$(dirname "$FULL_PATH_TO_SCRIPT")"
-SCRIPT_FILENAME="$(basename "$FULL_PATH_TO_SCRIPT")"
+CWD=$(pwd)
 
 # ++++ Error Handling and Backtracing ++++
 set -eE -o functrace
@@ -18,7 +15,6 @@ set -eE -o functrace
 function backtrace()
 {
     local deptn=${#FUNCNAME[@]}
-
     local start=${1:-1}
     for ((i=$start; i<$deptn; i++)); do
         local func="${FUNCNAME[$i]}"
@@ -33,14 +29,14 @@ suppressError=0
 
 failure()
 {
+	[ $suppressError -ne 0 ] && return 0
 	local lineno=$1
 	local msg=$2
-	if [[ $suppressError -eq 0 ]]; then
-		echo "Failed at $lineno: $msg"
-		echo "  pwd: $(pwd)"
-		backtrace 2
-	fi
+	echo "Failed at $lineno: $msg"
+	echo "  pwd: $CWD"
+	backtrace 2
 }
+
 trap 'failure ${LINENO} "$BASH_COMMAND"' ERR
 # ---- Erorr Handling and Backtracing ----
 
@@ -88,8 +84,7 @@ NAME_LIBC="avr-libc3.git" # https://github.com/ZakKemble/avr-libc3
 COMMIT_LIBC="d09c2a61764aced3274b6dde4399e11b0aee4a87"
 
 # Output locations for built toolchains
-BASE=${BASE:-${SCRIPT_DIRECTORY}/build/}
-PREFIX_FOR_TMP=${BASE}tmp
+BASE=${BASE:-${CWD}/build/}
 PREFIX_GCC_LINUX=${BASE}avr-${NAME_GCC}-x64-linux
 PREFIX_GCC_WINX86=${BASE}avr-${NAME_GCC}-x86-windows
 PREFIX_GCC_WINX64=${BASE}avr-${NAME_GCC}-x64-windows
@@ -125,7 +120,9 @@ OPTS_GDB="
 
 OPTS_LIBC=""
 
-LOG_DIR=$(pwd)
+TMP_DIR=${CWD}/tmp
+LOG_DIR=${CWD}
+
 log()
 {
 	echo "$1"
@@ -327,17 +324,17 @@ buildGDB()
 	{
 		log "GMP..."
 		cd $NAME_GMP/obj
-		confMake $PREFIX_FOR_TMP/$2 --host=$2
+		confMake $TMP_DIR/$2 --host=$2
 		cd ../../
 		
 		log "MPFR..."
 		cd $NAME_MPFR/obj
-		confMake $PREFIX_FOR_TMP/$2 "--with-gmp=$PREFIX_FOR_TMP/$2 --disable-shared --enable-static" --host=$2
+		confMake $TMP_DIR/$2 "--with-gmp=$TMP_DIR/$2 --disable-shared --enable-static" --host=$2
 		cd ../../
 
 		log "GDB..."
 		cd $NAME_GDB/obj-avr
-		confMake "$1" "--with-gmp=$PREFIX_FOR_TMP/$2 --with-mpfr=$PREFIX_FOR_TMP/$2 $OPTS_GDB" --host=$2
+		confMake "$1" "--with-gmp=$TMP_DIR/$2 --with-mpfr=$TMP_DIR/$2 $OPTS_GDB" --host=$2
 		cd ../../
 	}
 

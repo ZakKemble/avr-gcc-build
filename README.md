@@ -47,6 +47,7 @@ The build script automatically merges the `avr-libc` directory with each of the 
 |Variable|Default|Description|
 |---|---|---|
 |`JOBCOUNT`|Number of CPU cores your system has|More jobs require more RAM, so if you get errors like `collect2: fatal error: ld terminated with signal 9 [Killed]` then you may need to reduce the job count|
+|`BASE`|Docker: `/avr-gcc-build/build/`<br>Standalone: `[cwd]/build/`|Output directory (must have trailing slash)|
 |`VER_GCC`|`12.1.0`|GCC version|
 |`VER_BINUTILS`|`2.38`|Binutils version|
 |`VER_GDB`|`12.1`|GDB version|
