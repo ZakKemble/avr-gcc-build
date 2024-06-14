@@ -111,6 +111,7 @@ OPTS_GCC="
 	--enable-mingw-wildcard
 	--enable-plugin
 	--with-gnu-as
+	--with-gnu-ld
 "
 
 OPTS_GDB="
