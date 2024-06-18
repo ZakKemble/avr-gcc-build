@@ -40,8 +40,6 @@ docker run --rm -it -v "%cd%"/output:/output avrgccbuild
 
 You will find the built toolchains in the `output` directory of your current working directory.
 
-The build script automatically merges the `avr-libc` directory with each of the toolchain folders, so you can delete it when it's all done.
-
 ### Environment Variables
 
 |Variable|Default|Description|

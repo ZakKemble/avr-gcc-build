@@ -87,7 +87,6 @@ BASE=${BASE:-${CWD}/build/}
 PREFIX_GCC_LINUX=${BASE}avr-${NAME_GCC}-x64-linux
 PREFIX_GCC_WINX86=${BASE}avr-${NAME_GCC}-x86-windows
 PREFIX_GCC_WINX64=${BASE}avr-${NAME_GCC}-x64-windows
-PREFIX_LIBC=${BASE}avr-libc
 
 HOST_WINX86="i686-w64-mingw32"
 HOST_WINX64="x86_64-w64-mingw32"
@@ -214,7 +213,6 @@ cleanup()
 	[ $FOR_LINUX -eq 1 ] && makeDir "$PREFIX_GCC_LINUX"
 	[ $FOR_WINX86 -eq 1 ] && makeDir "$PREFIX_GCC_WINX86"
 	[ $FOR_WINX64 -eq 1 ] && makeDir "$PREFIX_GCC_WINX64"
-	[ $BUILD_LIBC -eq 1 ] && makeDir "$PREFIX_LIBC"
 
 	log "Clearing old downloads..."
 	rm -f $NAME_BINUTILS.tar.xz
@@ -360,17 +358,15 @@ buildAVRLIBC()
 	cd ${NAME_LIBC[1]}/obj-avr
 	
 	log "Making..."
-	confMake "$PREFIX_LIBC" "$OPTS_LIBC" --host=avr
+	../configure "$OPTS_LIBC" --host=avr --build=`../config.guess`
+	make -j $JOBCOUNT
+
+	log "Installing into toolchains..."
+	[ $FOR_LINUX -eq 1 ] && log "Linux" && make install prefix="${PREFIX_GCC_LINUX}"
+	[ $FOR_WINX86 -eq 1 ] && log "Windows x86" && make install prefix="${PREFIX_GCC_WINX86}"
+	[ $FOR_WINX64 -eq 1 ] && log "Windows x64" && make install prefix="${PREFIX_GCC_WINX64}"
 
 	cd ../../
-
-	log "Merging AVR-LibC with toolchains..."
-	[ $FOR_LINUX -eq 1 ] && log "Linux" && cp -r "$PREFIX_LIBC"/* "$PREFIX_GCC_LINUX"
-	[ $FOR_WINX86 -eq 1 ] && log "Windows x86" && cp -r "$PREFIX_LIBC"/* "$PREFIX_GCC_WINX86"
-	[ $FOR_WINX64 -eq 1 ] && log "Windows x64" && cp -r "$PREFIX_LIBC"/* "$PREFIX_GCC_WINX64"
-
-	log "Removing AVR-LibC..."
-	rm -rf "$PREFIX_LIBC"
 }
 
 installPackages
