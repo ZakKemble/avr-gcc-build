@@ -75,11 +75,18 @@ BUILD_GDB=${BUILD_GDB:-1}
 # Build AVR-LibC (requires AVR-GCC)
 BUILD_LIBC=${BUILD_LIBC:-1}
 
+# TODO sometime maybe
+#BUILD_SIMULAVR=1
+#BUILD_MAKE=1
+#BUILD_COREUTILS=1
+
 NAME_BINUTILS="binutils-${VER_BINUTILS:-2.42}"
 NAME_GCC="gcc-${VER_GCC:-14.1.0}"
 NAME_GDB="gdb-${VER_GDB:-14.2}"
 NAME_GMP="gmp-6.3.0" # GDB 11+ needs libgmp
 NAME_MPFR="mpfr-4.2.1" # GDB 14+ needs libmpfr
+#NAME_MAKE="make-4.4.1"
+#NAME_COREUTILS="coreutils-9.6"
 NAME_LIBC=("avr-libc-2_2_0-release" "avr-libc-2.2.0")
 
 # Output locations for built toolchains
@@ -123,6 +130,7 @@ OPTS_GDB="
 	--target=avr
 	--with-static-standard-libraries
 "
+# --disable-source-highlight
 
 OPTS_LIBC=""
 
@@ -248,6 +256,9 @@ downloadSources()
 		log "${NAME_LIBC[1]}"
 		wget https://github.com/avrdudes/avr-libc/releases/download/${NAME_LIBC[0]}/${NAME_LIBC[1]}.tar.bz2
 	fi
+
+#	[[ $BUILD_MAKE -eq 1 ]] && wget http://ftp.gnu.org/gnu/make/$NAME_MAKE.tar.gz
+#	[[ $BUILD_COREUTILS -eq 1 ]] && wget https://ftp.gnu.org/gnu/coreutils/$NAME_COREUTILS.tar.xz
 }
 
 confMake()
