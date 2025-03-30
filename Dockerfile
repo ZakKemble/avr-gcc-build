@@ -3,11 +3,12 @@ LABEL repo="https://github.com/ZakKemble/avr-gcc-build"
 
 WORKDIR /avr-gcc-build
 
-RUN apt update && \
-	apt -y install wget make mingw-w64 gcc g++ bzip2 xz-utils autoconf texinfo libgmp-dev libmpfr-dev
+RUN apt update \
+	&& apt -y install wget make mingw-w64 gcc g++ bzip2 xz-utils autoconf texinfo libgmp-dev libmpfr-dev \
+	&& apt clean \
+	&& rm -rf /var/lib/apt/lists/*
 
-COPY avr-gcc-build.sh .
-RUN chmod +x avr-gcc-build.sh
+COPY --chmod=755 avr-gcc-build.sh .
 
 
 # Bind mounts from Windows are very slow and seriously impacts build time.
