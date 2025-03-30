@@ -12,7 +12,7 @@ CWD=$(pwd)
 # ++++ Error Handling and Backtracing ++++
 set -eE -o functrace
 
-function backtrace()
+backtrace()
 {
     local deptn=${#FUNCNAME[@]}
     local start=${1:-1}
@@ -29,7 +29,7 @@ suppressError=0
 
 failure()
 {
-	[ $suppressError -ne 0 ] && return 0
+	[[ $suppressError -ne 0 ]] && return 0
 	local lineno=$1
 	local msg=$2
 	echo "Failed at $lineno: $msg"
@@ -210,9 +210,9 @@ fixGCCAVR()
 cleanup()
 {
 	log "Clearing output directories..."
-	[ $FOR_LINUX -eq 1 ] && makeDir "$PREFIX_GCC_LINUX"
-	[ $FOR_WINX86 -eq 1 ] && makeDir "$PREFIX_GCC_WINX86"
-	[ $FOR_WINX64 -eq 1 ] && makeDir "$PREFIX_GCC_WINX64"
+	[[ $FOR_LINUX -eq 1 ]] && makeDir "$PREFIX_GCC_LINUX"
+	[[ $FOR_WINX86 -eq 1 ]] && makeDir "$PREFIX_GCC_WINX86"
+	[[ $FOR_WINX64 -eq 1 ]] && makeDir "$PREFIX_GCC_WINX64"
 
 	log "Clearing old downloads..."
 	rm -f $NAME_BINUTILS.tar.xz
@@ -232,19 +232,19 @@ cleanup()
 downloadSources()
 {
 	log "Downloading sources..."
-	[ $BUILD_BINUTILS -eq 1 ] && log "$NAME_BINUTILS" && wget https://ftpmirror.gnu.org/binutils/$NAME_BINUTILS.tar.xz
-	[ $BUILD_GCC -eq 1 ] && log "$NAME_GCC" && wget https://ftpmirror.gnu.org/gcc/$NAME_GCC/$NAME_GCC.tar.xz
-	if [ $BUILD_GDB -eq 1 ]; then
+	[[ $BUILD_BINUTILS -eq 1 ]] && log "$NAME_BINUTILS" && wget https://ftpmirror.gnu.org/binutils/$NAME_BINUTILS.tar.xz
+	[[ $BUILD_GCC -eq 1 ]] && log "$NAME_GCC" && wget https://ftpmirror.gnu.org/gcc/$NAME_GCC/$NAME_GCC.tar.xz
+	if [[ $BUILD_GDB -eq 1 ]]; then
 		log "$NAME_GDB"
 		wget https://ftpmirror.gnu.org/gdb/$NAME_GDB.tar.xz
-		if [ $FOR_WINX86 -eq 1 ] || [ $FOR_WINX64 -eq 1 ]; then
+		if [[ $FOR_WINX86 -eq 1 ]] || [[ $FOR_WINX64 -eq 1 ]]; then
 			log "$NAME_GMP"
 			wget https://ftpmirror.gnu.org/gmp/$NAME_GMP.tar.xz
 			log "$NAME_MPFR"
 			wget https://ftpmirror.gnu.org/mpfr/$NAME_MPFR.tar.xz
 		fi
 	fi
-	if [ $BUILD_LIBC -eq 1 ]; then
+	if [[ $BUILD_LIBC -eq 1 ]]; then
 		log "${NAME_LIBC[1]}"
 		wget https://github.com/avrdudes/avr-libc/releases/download/${NAME_LIBC[0]}/${NAME_LIBC[1]}.tar.bz2
 	fi
@@ -261,16 +261,16 @@ confMake()
 buildBinutils()
 {
 	log "***Binutils***"
-	[ $BUILD_BINUTILS -ne 1 ] && log "(Skipping)" && return 0
+	[[ $BUILD_BINUTILS -ne 1 ]] && log "(Skipping)" && return 0
 
 	log "Extracting..."
 	tar xf $NAME_BINUTILS.tar.xz
 	mkdir -p $NAME_BINUTILS/obj-avr
 	cd $NAME_BINUTILS/obj-avr
 
-	[ $FOR_LINUX -eq 1 ] && log "Making for Linux..." && confMake "$PREFIX_GCC_LINUX" "$OPTS_BINUTILS"
-	[ $FOR_WINX86 -eq 1 ] && log "Making for Windows x86..." && confMake "$PREFIX_GCC_WINX86" "$OPTS_BINUTILS" --host=$HOST_WINX86
-	[ $FOR_WINX64 -eq 1 ] && log "Making for Windows x64..." && confMake "$PREFIX_GCC_WINX64" "$OPTS_BINUTILS" --host=$HOST_WINX64
+	[[ $FOR_LINUX -eq 1 ]] && log "Making for Linux..." && confMake "$PREFIX_GCC_LINUX" "$OPTS_BINUTILS"
+	[[ $FOR_WINX86 -eq 1 ]] && log "Making for Windows x86..." && confMake "$PREFIX_GCC_WINX86" "$OPTS_BINUTILS" --host=$HOST_WINX86
+	[[ $FOR_WINX64 -eq 1 ]] && log "Making for Windows x64..." && confMake "$PREFIX_GCC_WINX64" "$OPTS_BINUTILS" --host=$HOST_WINX64
 
 	cd ../../
 }
@@ -278,7 +278,7 @@ buildBinutils()
 buildGCC()
 {
 	log "***GCC***"
-	[ $BUILD_GCC -ne 1 ] && log "(Skipping)" && return 0
+	[[ $BUILD_GCC -ne 1 ]] && log "(Skipping)" && return 0
 
 	log "Extracting..."
 	tar xf $NAME_GCC.tar.xz
@@ -292,9 +292,9 @@ buildGCC()
 	cd obj-avr
 	# fixGCCAVR
 
-	[ $FOR_LINUX -eq 1 ] && log "Making for Linux..." && confMake "$PREFIX_GCC_LINUX" "$OPTS_GCC"
-	[ $FOR_WINX86 -eq 1 ] && log "Making for Windows x86..." && confMake "$PREFIX_GCC_WINX86" "$OPTS_GCC" --host=$HOST_WINX86
-	[ $FOR_WINX64 -eq 1 ] && log "Making for Windows x64..." && confMake "$PREFIX_GCC_WINX64" "$OPTS_GCC" --host=$HOST_WINX64
+	[[ $FOR_LINUX -eq 1 ]] && log "Making for Linux..." && confMake "$PREFIX_GCC_LINUX" "$OPTS_GCC"
+	[[ $FOR_WINX86 -eq 1 ]] && log "Making for Windows x86..." && confMake "$PREFIX_GCC_WINX86" "$OPTS_GCC" --host=$HOST_WINX86
+	[[ $FOR_WINX64 -eq 1 ]] && log "Making for Windows x64..." && confMake "$PREFIX_GCC_WINX64" "$OPTS_GCC" --host=$HOST_WINX64
 
 	cd ../../
 }
@@ -302,19 +302,19 @@ buildGCC()
 buildGDB()
 {
 	log "***GDB (and GMP, MPFR for Windows)***"
-	[ $BUILD_GDB -ne 1 ] && log "(Skipping)" && return 0
+	[[ $BUILD_GDB -ne 1 ]] && log "(Skipping)" && return 0
 
 	log "Extracting..."
 	tar xf $NAME_GDB.tar.xz
 	mkdir -p $NAME_GDB/obj-avr
-	if [ $FOR_WINX86 -eq 1 ] || [ $FOR_WINX64 -eq 1 ]; then
+	if [[ $FOR_WINX86 -eq 1 ]] || [[ $FOR_WINX64 -eq 1 ]]; then
 		tar xf $NAME_GMP.tar.xz
 		mkdir -p $NAME_GMP/obj
 		tar xf $NAME_MPFR.tar.xz
 		mkdir -p $NAME_MPFR/obj
 	fi
 
-	if [ $FOR_LINUX -eq 1 ]; then
+	if [[ $FOR_LINUX -eq 1 ]]; then
 		log "Making for Linux..."
 		cd $NAME_GDB/obj-avr
 		confMake "$PREFIX_GCC_LINUX" "$OPTS_GDB"
@@ -339,8 +339,8 @@ buildGDB()
 		cd ../../
 	}
 
-	[ $FOR_WINX86 -eq 1 ] && log "Making for Windows x86..." && buildGDBWin "$PREFIX_GCC_WINX86" $HOST_WINX86
-	[ $FOR_WINX64 -eq 1 ] && log "Making for Windows x64..." && buildGDBWin "$PREFIX_GCC_WINX64" $HOST_WINX64
+	[[ $FOR_WINX86 -eq 1 ]] && log "Making for Windows x86..." && buildGDBWin "$PREFIX_GCC_WINX86" $HOST_WINX86
+	[[ $FOR_WINX64 -eq 1 ]] && log "Making for Windows x64..." && buildGDBWin "$PREFIX_GCC_WINX64" $HOST_WINX64
 
 	# For some reason we need some random command here otherwise
 	# the script exits with no error when FOR_WINX64=0
@@ -350,7 +350,7 @@ buildGDB()
 buildAVRLIBC()
 {
 	log "***AVR-LibC***"
-	[ $BUILD_LIBC -ne 1 ] && log "(Skipping)" && return 0
+	[[ $BUILD_LIBC -ne 1 ]] && log "(Skipping)" && return 0
 
 	log "Extracting..."
 	bunzip2 -c ${NAME_LIBC[1]}.tar.bz2 | tar xf -
@@ -362,9 +362,9 @@ buildAVRLIBC()
 	make -j $JOBCOUNT
 
 	log "Installing into toolchains..."
-	[ $FOR_LINUX -eq 1 ] && log "Linux" && make install prefix="${PREFIX_GCC_LINUX}"
-	[ $FOR_WINX86 -eq 1 ] && log "Windows x86" && make install prefix="${PREFIX_GCC_WINX86}"
-	[ $FOR_WINX64 -eq 1 ] && log "Windows x64" && make install prefix="${PREFIX_GCC_WINX64}"
+	[[ $FOR_LINUX -eq 1 ]] && log "Linux" && make install prefix="${PREFIX_GCC_LINUX}"
+	[[ $FOR_WINX86 -eq 1 ]] && log "Windows x86" && make install prefix="${PREFIX_GCC_WINX86}"
+	[[ $FOR_WINX64 -eq 1 ]] && log "Windows x64" && make install prefix="${PREFIX_GCC_WINX64}"
 
 	cd ../../
 }
