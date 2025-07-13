@@ -143,18 +143,6 @@ log()
 	echo "[$(date +"%d %b %y %H:%M:%S")]: $1" >> "$LOG_DIR/avr-gcc-build.log"
 }
 
-disableErrorStop()
-{
-	set +e
-	suppressError=1
-}
-
-enableErrorStop()
-{
-	set -e
-	suppressError=0
-}
-
 installPackages()
 {
 	local requiredPackages=("wget" "make" "mingw-w64" "gcc" "g++" "bzip2" "xz-utils" "autoconf" "texinfo" "libgmp-dev" "libmpfr-dev")
@@ -164,18 +152,14 @@ installPackages()
 		local packageMissing=0
 		for package in "${requiredPackages[@]}"
 		do
-			disableErrorStop # disable stop on error for one line
-			dpkg -s "$package" > /dev/null 2>&1
-			local checkPackageResult=$?
-			enableErrorStop
-			if [[ $checkPackageResult -ne 0 ]]; then
-				echo "ERROR: Package \"$package\" is not installed. But it is required."
+			if ! dpkg -s "$package" > /dev/null 2>&1; then
+				echo "ERROR: Package \"$package\" is not installed. But it is required." 1>&2
 				packageMissing=1
 			fi
 		done
 
 		if [[ $packageMissing -ne 0 ]]; then
-			echo "Not all required packages are installed. You need to install them manually or run the script with root (sudo)"
+			echo "Not all required packages are installed. You need to install them manually or run the script with root (sudo)" 1>&2
 			exit 2
 		fi
 
