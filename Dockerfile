@@ -4,11 +4,22 @@ LABEL repo="https://github.com/ZakKemble/avr-gcc-build"
 WORKDIR /avr-gcc-build
 
 RUN apt update \
-	&& apt -y install wget make mingw-w64 gcc g++ bzip2 xz-utils autoconf texinfo libgmp-dev libmpfr-dev \
+	&& apt -y install \
+		wget \
+		make \
+		mingw-w64 \
+		gcc \
+		g++ \
+		bzip2 \
+		xz-utils \
+		autoconf \
+		texinfo \
+		libgmp-dev \
+		libmpfr-dev \
 	&& apt clean \
 	&& rm -rf /var/lib/apt/lists/*
 
-COPY --chmod=755 avr-gcc-build.sh .
+COPY --chmod=755 avr-gcc-build.sh entrypoint.sh .
 
 
 # Bind mounts from Windows are very slow and seriously impacts build time.
@@ -18,8 +29,4 @@ COPY --chmod=755 avr-gcc-build.sh .
 
 ENV BASE=/avr-gcc-build/build/
 
-CMD ./avr-gcc-build.sh \
-	; echo "Moving toolchains to /output/..." \
-	; mv ${BASE}* /output/ \
-	; mv ./avr-gcc-build.log /output/ \
-	; echo "Done"
+ENTRYPOINT ["./entrypoint.sh"]
