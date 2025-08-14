@@ -3,7 +3,7 @@
 # avr-gcc-build
 # https://blog.zakkemble.net/avr-gcc-builds/
 # https://github.com/ZakKemble/avr-gcc-build
-# Copyright (C) 2024, Zak Kemble
+# Copyright (C) 2017-2025, Zak Kemble
 # Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)
 # http://creativecommons.org/licenses/by-sa/4.0/
 
@@ -168,6 +168,7 @@ installPackages()
 		echo "All required packages are installed. Continuing..."
 	else
 		log "Running as root user. Installing required packages via apt..."
+		apt update
 		apt install "${requiredPackages[@]}"
 	fi
 }

@@ -8,7 +8,7 @@ The `avr-gcc-build.sh` script was originally a [gist](https://gist.github.com/Za
 
 Upgrading the Arduino IDE is pretty easy, though there could be some incompatibilities with certain libraries. Only tested with Arduino 1.8.13.
 
-1. Download and extract the [latest release](https://github.com/ZakKemble/avr-gcc-builds/releases)
+1. Download and extract the [latest release](https://github.com/ZakKemble/avr-gcc-build/releases)
 2. Navigate to your Arduino IDE folder
 3. Go to `hardware/tools`
 4. Move the `avr` folder somewhere else, like to your desktop (renaming the folder won't work, Arduino has some auto-detect thing which sometimes gets confused)
