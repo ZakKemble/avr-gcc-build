@@ -46,8 +46,8 @@ You will find the built toolchains in the `output` directory of your current wor
 |---|---|---|
 |`JOBCOUNT`|Number of CPU cores your system has|More jobs require more RAM, so if you get errors like `collect2: fatal error: ld terminated with signal 9 [Killed]` then you may need to reduce the job count|
 |`BASE`|Docker: `/avr-gcc-build/build/`<br>Standalone: `[cwd]/build/`|Output directory (must have trailing slash)|
-|`VER_GCC`|`15.1.0`|GCC version|
-|`VER_BINUTILS`|`2.44`|Binutils version|
+|`VER_GCC`|`15.2.0`|GCC version|
+|`VER_BINUTILS`|`2.45`|Binutils version|
 |`VER_GDB`|`16.3`|GDB version|
 |`FOR_LINUX`|`1`|Build for Linux. A Linux AVR-GCC toolchain is required to build a Windows toolchain. If the Linux toolchain has already been built then you can set this to `0`. **This is a bit broken at the moment and should stay as `1`**|
 |`FOR_WINX86`|`0`|Build for 32 bit Windows|

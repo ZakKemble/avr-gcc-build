@@ -80,8 +80,8 @@ BUILD_LIBC=${BUILD_LIBC:-1}
 #BUILD_MAKE=1
 #BUILD_COREUTILS=1
 
-NAME_BINUTILS="binutils-${VER_BINUTILS:-2.44}"
-NAME_GCC="gcc-${VER_GCC:-15.1.0}"
+NAME_BINUTILS="binutils-${VER_BINUTILS:-2.45}"
+NAME_GCC="gcc-${VER_GCC:-15.2.0}"
 NAME_GDB="gdb-${VER_GDB:-16.3}"
 NAME_GMP="gmp-6.3.0" # GDB 11+ needs libgmp
 NAME_MPFR="mpfr-4.2.2" # GDB 14+ needs libmpfr
