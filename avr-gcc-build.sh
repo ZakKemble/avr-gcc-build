@@ -85,6 +85,7 @@ NAME_GCC="gcc-${VER_GCC:-15.1.0}"
 NAME_GDB="gdb-${VER_GDB:-16.3}"
 NAME_GMP="gmp-6.3.0" # GDB 11+ needs libgmp
 NAME_MPFR="mpfr-4.2.2" # GDB 14+ needs libmpfr
+NAME_EXPAT=("R_2_7_1" "expat-2.7.1") # GDB XML support
 #NAME_MAKE="make-4.4.1"
 #NAME_COREUTILS="coreutils-9.6"
 NAME_LIBC=("avr-libc-2_2_1-release" "avr-libc-2.2.1")
@@ -129,6 +130,7 @@ OPTS_GCC="
 OPTS_GDB="
 	--target=avr
 	--with-static-standard-libraries
+	--with-expat
 "
 # --disable-source-highlight
 
@@ -145,7 +147,7 @@ log()
 
 installPackages()
 {
-	local requiredPackages=("wget" "make" "mingw-w64" "gcc" "g++" "bzip2" "xz-utils" "autoconf" "texinfo" "libgmp-dev" "libmpfr-dev")
+	local requiredPackages=("wget" "make" "mingw-w64" "gcc" "g++" "bzip2" "xz-utils" "autoconf" "texinfo" "libgmp-dev" "libmpfr-dev" "libexpat1-dev")
 
 	if [[ $EUID -ne 0 ]]; then
 		log "Not running as root user. Checking whether all required packages are installed..."
@@ -217,6 +219,8 @@ cleanup()
 	rm -rf $NAME_GMP
 	rm -f $NAME_MPFR.tar.xz
 	rm -rf $NAME_MPFR
+	rm -f ${NAME_EXPAT[1]}.tar.xz
+	rm -rf ${NAME_EXPAT[1]}
 	rm -f ${NAME_LIBC[1]}.tar.bz2
 	rm -rf ${NAME_LIBC[1]}
 }
@@ -234,6 +238,8 @@ downloadSources()
 			wget https://ftpmirror.gnu.org/gmp/$NAME_GMP.tar.xz
 			log "$NAME_MPFR"
 			wget https://ftpmirror.gnu.org/mpfr/$NAME_MPFR.tar.xz
+			log "${NAME_EXPAT[1]}"
+			wget https://github.com/libexpat/libexpat/releases/download/${NAME_EXPAT[0]}/${NAME_EXPAT[1]}.tar.xz
 		fi
 	fi
 	if [[ $BUILD_LIBC -eq 1 ]]; then
@@ -247,7 +253,7 @@ downloadSources()
 
 confMake()
 {
-	../configure --prefix=$1 $2 $3 --build=`../config.guess`
+	../configure --prefix=$1 $2 $3 --build=`${4:-../config.guess}`
 	make -j $JOBCOUNT
 	make install-strip
 	rm -rf *
@@ -296,7 +302,7 @@ buildGCC()
 
 buildGDB()
 {
-	log "***GDB (and GMP, MPFR for Windows)***"
+	log "***GDB (and GMP, MPFR, Expat for Windows)***"
 	[[ $BUILD_GDB -ne 1 ]] && log "(Skipping)" && return 0
 
 	log "Extracting..."
@@ -307,6 +313,8 @@ buildGDB()
 		mkdir -p $NAME_GMP/obj
 		tar xf $NAME_MPFR.tar.xz
 		mkdir -p $NAME_MPFR/obj
+		tar xf ${NAME_EXPAT[1]}.tar.xz
+		mkdir -p ${NAME_EXPAT[1]}/obj
 	fi
 
 	if [[ $FOR_LINUX -eq 1 ]]; then
@@ -328,9 +336,14 @@ buildGDB()
 		confMake $TMP_DIR/$2 "--with-gmp=$TMP_DIR/$2 --disable-shared --enable-static" --host=$2
 		cd ../../
 
+		log "Expat..."
+		cd ${NAME_EXPAT[1]}/obj
+		confMake $TMP_DIR/$2 "--disable-shared --enable-static" --host=$2 "../conftools/config.guess"
+		cd ../../
+
 		log "GDB..."
 		cd $NAME_GDB/obj-avr
-		confMake "$1" "--with-gmp=$TMP_DIR/$2 --with-mpfr=$TMP_DIR/$2 $OPTS_GDB" --host=$2
+		confMake "$1" "--with-gmp=$TMP_DIR/$2 --with-mpfr=$TMP_DIR/$2 --with-libexpat-prefix=$TMP_DIR/$2 $OPTS_GDB" --host=$2
 		cd ../../
 	}
 

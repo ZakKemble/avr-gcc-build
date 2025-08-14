@@ -16,6 +16,7 @@ RUN apt update \
 		texinfo \
 		libgmp-dev \
 		libmpfr-dev \
+		libexpat1-dev \
 	&& apt clean \
 	&& rm -rf /var/lib/apt/lists/*
 
