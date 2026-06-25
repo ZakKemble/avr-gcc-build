@@ -178,7 +178,7 @@ installPackages()
 
 makeDir()
 {
-	rm -rf "$1/"
+	rm -rf "$1"
 	mkdir -p "$1"
 }
 
@@ -260,7 +260,7 @@ confMake()
 	../configure --prefix=$1 $2 $3 --build=`${4:-../config.guess}`
 	make -j $JOBCOUNT
 	make install-strip
-	rm -rf *
+	rm -rf -- *
 }
 
 buildBinutils()
