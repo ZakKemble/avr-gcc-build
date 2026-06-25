@@ -12,6 +12,7 @@ CWD=$(pwd)
 # ++++ Error Handling and Backtracing ++++
 set -eE -o functrace
 
+# shellcheck disable=SC2329
 backtrace()
 {
     local deptn=${#FUNCNAME[@]}
@@ -20,13 +21,14 @@ backtrace()
         local func="${FUNCNAME[$i]}"
         local line="${BASH_LINENO[$((i-1))]}"
         local src="${BASH_SOURCE[$((i-1))]}"
-        printf '%*s' $i '' # indent
+        printf '%*s' "$i" '' # indent
         echo "at: $func(), $src, line $line"
     done
 }
 
 suppressError=0
 
+# shellcheck disable=SC2329
 failure()
 {
 	[[ $suppressError -ne 0 ]] && return 0
@@ -182,6 +184,7 @@ makeDir()
 	mkdir -p "$1"
 }
 
+# shellcheck disable=SC2329
 fixGCCAVR()
 {
 	# In GCC 7.1.0 there seems to be an issue with INT8_MAX and some other things being undefined in /gcc/config/avr/avr.c when building for Windows.
@@ -257,7 +260,7 @@ downloadSources()
 
 confMake()
 {
-	../configure --prefix=$1 $2 $3 --build=`${4:-../config.guess}`
+	../configure --prefix=$1 $2 $3 --build=$(${4:-../config.guess})
 	make -j "$JOBCOUNT"
 	make install-strip
 	rm -rf -- *
@@ -332,17 +335,17 @@ buildGDB()
 	{
 		log "GMP..."
 		cd "${NAME_GMP}/obj"
-		confMake "$TMP_DIR"/$2 --host=$2
+		confMake "${TMP_DIR}/$2" --host=$2
 		cd ../../
 		
 		log "MPFR..."
 		cd "${NAME_MPFR}/obj"
-		confMake $TMP_DIR/$2 "--with-gmp=$TMP_DIR/$2 --disable-shared --enable-static" --host=$2
+		confMake "${TMP_DIR}/$2" "--with-gmp=$TMP_DIR/$2 --disable-shared --enable-static" --host=$2
 		cd ../../
 
 		log "Expat..."
 		cd "${NAME_EXPAT[1]}/obj"
-		confMake $TMP_DIR/$2 "--disable-shared --enable-static" --host=$2 "../conftools/config.guess"
+		confMake "${TMP_DIR}/$2" "--disable-shared --enable-static" --host=$2 "../conftools/config.guess"
 		cd ../../
 
 		log "GDB..."
@@ -370,7 +373,7 @@ buildAVRLIBC()
 	cd "${NAME_LIBC[1]}/obj-avr"
 
 	log "Making..."
-	../configure "$OPTS_LIBC" --host=avr --build=`../config.guess`
+	../configure "$OPTS_LIBC" --host=avr --build="$(../config.guess)"
 	make -j "$JOBCOUNT"
 
 	log "Installing into toolchains..."
@@ -387,7 +390,7 @@ log "Start"
 
 TIME_START=$(date +%s)
 
-export PATH="$PREFIX_GCC_LINUX"/bin:"$PATH"
+export PATH="${PREFIX_GCC_LINUX}/bin:${PATH}"
 export CC=""
 
 cleanup
@@ -398,10 +401,10 @@ buildGDB
 buildAVRLIBC
 
 TIME_END=$(date +%s)
-TIME_RUN=$(($TIME_END - $TIME_START))
+TIME_RUN=$((TIME_END - TIME_START))
 
 echo ""
-log "Done in $TIME_RUN seconds"
-log "Toolchains are in $BASE"
+log "Done in ${TIME_RUN} seconds"
+log "Toolchains are in ${BASE}"
 
 exit 0
