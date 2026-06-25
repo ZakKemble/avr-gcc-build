@@ -1,0 +1,22 @@
+name: "Shellcheck"
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+concurrency:
+  group: ${{ github.head_ref || github.ref_name }}
+
+permissions: {}
+
+jobs:
+  shellcheck:
+    name: Shellcheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.0
+
+      - name: Run ShellCheck
+        uses: ludeeus/action-shellcheck@v2.0.0
