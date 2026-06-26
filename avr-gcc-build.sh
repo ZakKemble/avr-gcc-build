@@ -39,7 +39,7 @@ failure()
 	backtrace 2
 }
 
-trap 'failure ${LINENO} "$BASH_COMMAND"' ERR
+trap 'failure $LINENO "$BASH_COMMAND"' ERR
 # ---- Erorr Handling and Backtracing ----
 
 
@@ -93,7 +93,7 @@ NAME_EXPAT=("R_2_7_1" "expat-2.7.1") # GDB XML support
 NAME_LIBC=("avr-libc-2_2_1-release" "avr-libc-2.2.1")
 
 # Output locations for built toolchains
-BASE=${BASE:-${CWD}/build/}
+BASE=${BASE:-$CWD/build/}
 PREFIX_GCC_LINUX=${BASE}avr-${NAME_GCC}-x64-linux
 PREFIX_GCC_WINX86=${BASE}avr-${NAME_GCC}-x86-windows
 PREFIX_GCC_WINX64=${BASE}avr-${NAME_GCC}-x64-windows
@@ -138,8 +138,8 @@ OPTS_GDB=(
 
 OPTS_LIBC=()
 
-TMP_DIR=${CWD}/tmp
-LOG_DIR=${CWD}
+TMP_DIR=$CWD/tmp
+LOG_DIR=$CWD
 
 log()
 {
@@ -216,15 +216,15 @@ cleanup()
 	[[ $FOR_WINX64 -eq 1 ]] && makeDir "$PREFIX_GCC_WINX64"
 
 	log "Clearing old downloads..."
-	rm -f "${NAME_BINUTILS}.tar.xz"
+	rm -f "$NAME_BINUTILS.tar.xz"
 	rm -rf "$NAME_BINUTILS"
-	rm -f "${NAME_GCC}.tar.xz"
+	rm -f "$NAME_GCC.tar.xz"
 	rm -rf "$NAME_GCC"
-	rm -f "${NAME_GDB}.tar.xz"
+	rm -f "$NAME_GDB.tar.xz"
 	rm -rf "$NAME_GDB"
-	rm -f "${NAME_GMP}.tar.xz"
+	rm -f "$NAME_GMP.tar.xz"
 	rm -rf "$NAME_GMP"
-	rm -f "${NAME_MPFR}.tar.xz"
+	rm -f "$NAME_MPFR.tar.xz"
 	rm -rf "$NAME_MPFR"
 	rm -f "${NAME_EXPAT[1]}.tar.xz"
 	rm -rf "${NAME_EXPAT[1]}"
@@ -235,16 +235,16 @@ cleanup()
 downloadSources()
 {
 	log "Downloading sources..."
-	[[ $BUILD_BINUTILS -eq 1 ]] && log "$NAME_BINUTILS" && wget "https://ftpmirror.gnu.org/binutils/${NAME_BINUTILS}.tar.xz"
-	[[ $BUILD_GCC -eq 1 ]] && log "$NAME_GCC" && wget "https://ftpmirror.gnu.org/gcc/${NAME_GCC}/${NAME_GCC}.tar.xz"
+	[[ $BUILD_BINUTILS -eq 1 ]] && log "$NAME_BINUTILS" && wget "https://ftpmirror.gnu.org/binutils/$NAME_BINUTILS.tar.xz"
+	[[ $BUILD_GCC -eq 1 ]] && log "$NAME_GCC" && wget "https://ftpmirror.gnu.org/gcc/$NAME_GCC/$NAME_GCC.tar.xz"
 	if [[ $BUILD_GDB -eq 1 ]]; then
 		log "$NAME_GDB"
-		wget "https://ftpmirror.gnu.org/gdb/${NAME_GDB}.tar.xz"
+		wget "https://ftpmirror.gnu.org/gdb/$NAME_GDB.tar.xz"
 		if [[ $FOR_WINX86 -eq 1 ]] || [[ $FOR_WINX64 -eq 1 ]]; then
 			log "$NAME_GMP"
-			wget "https://ftpmirror.gnu.org/gmp/${NAME_GMP}.tar.xz"
+			wget "https://ftpmirror.gnu.org/gmp/$NAME_GMP.tar.xz"
 			log "$NAME_MPFR"
-			wget "https://ftpmirror.gnu.org/mpfr/${NAME_MPFR}.tar.xz"
+			wget "https://ftpmirror.gnu.org/mpfr/$NAME_MPFR.tar.xz"
 			log "${NAME_EXPAT[1]}"
 			wget "https://github.com/libexpat/libexpat/releases/download/${NAME_EXPAT[0]}/${NAME_EXPAT[1]}.tar.xz"
 		fi
@@ -254,8 +254,8 @@ downloadSources()
 		wget "https://github.com/avrdudes/avr-libc/releases/download/${NAME_LIBC[0]}/${NAME_LIBC[1]}.tar.bz2"
 	fi
 
-#	[[ $BUILD_MAKE -eq 1 ]] && wget "http://ftp.gnu.org/gnu/make/${NAME_MAKE}.tar.gz"
-#	[[ $BUILD_COREUTILS -eq 1 ]] && wget "https://ftp.gnu.org/gnu/coreutils/${NAME_COREUTILS}.tar.xz"
+#	[[ $BUILD_MAKE -eq 1 ]] && wget "http://ftp.gnu.org/gnu/make/$NAME_MAKE.tar.gz"
+#	[[ $BUILD_COREUTILS -eq 1 ]] && wget "https://ftp.gnu.org/gnu/coreutils/$NAME_COREUTILS.tar.xz"
 }
 
 confMake()
@@ -284,9 +284,9 @@ buildBinutils()
 	[[ $BUILD_BINUTILS -ne 1 ]] && log "(Skipping)" && return 0
 
 	log "Extracting..."
-	tar xf "${NAME_BINUTILS}.tar.xz"
-	mkdir -p "${NAME_BINUTILS}/obj-avr"
-	cd "${NAME_BINUTILS}/obj-avr"
+	tar xf "$NAME_BINUTILS.tar.xz"
+	mkdir -p "$NAME_BINUTILS/obj-avr"
+	cd "$NAME_BINUTILS/obj-avr"
 
 	[[ $FOR_LINUX -eq 1 ]] && log "Making for Linux..." && confMake "$PREFIX_GCC_LINUX" "" "${OPTS_BINUTILS[@]}"
 	[[ $FOR_WINX86 -eq 1 ]] && log "Making for Windows x86..." && confMake "$PREFIX_GCC_WINX86" "" "${OPTS_BINUTILS[@]}" --host="$HOST_WINX86"
@@ -301,8 +301,8 @@ buildGCC()
 	[[ $BUILD_GCC -ne 1 ]] && log "(Skipping)" && return 0
 
 	log "Extracting..."
-	tar xf "${NAME_GCC}.tar.xz"
-	mkdir -p "${NAME_GCC}/obj-avr"
+	tar xf "$NAME_GCC.tar.xz"
+	mkdir -p "$NAME_GCC/obj-avr"
 	cd "$NAME_GCC"
 
 	log "Getting prerequisites..."
@@ -325,20 +325,20 @@ buildGDB()
 	[[ $BUILD_GDB -ne 1 ]] && log "(Skipping)" && return 0
 
 	log "Extracting..."
-	tar xf "${NAME_GDB}.tar.xz"
-	mkdir -p "${NAME_GDB}/obj-avr"
+	tar xf "$NAME_GDB.tar.xz"
+	mkdir -p "$NAME_GDB/obj-avr"
 	if [[ $FOR_WINX86 -eq 1 ]] || [[ $FOR_WINX64 -eq 1 ]]; then
-		tar xf "${NAME_GMP}.tar.xz"
-		mkdir -p "${NAME_GMP}/obj"
-		tar xf "${NAME_MPFR}.tar.xz"
-		mkdir -p "${NAME_MPFR}/obj"
+		tar xf "$NAME_GMP.tar.xz"
+		mkdir -p "$NAME_GMP/obj"
+		tar xf "$NAME_MPFR.tar.xz"
+		mkdir -p "$NAME_MPFR/obj"
 		tar xf "${NAME_EXPAT[1]}.tar.xz"
 		mkdir -p "${NAME_EXPAT[1]}/obj"
 	fi
 
 	if [[ $FOR_LINUX -eq 1 ]]; then
 		log "Making for Linux..."
-		cd "${NAME_GDB}/obj-avr"
+		cd "$NAME_GDB/obj-avr"
 		confMake "$PREFIX_GCC_LINUX" "" "${OPTS_GDB[@]}"
 		cd ../../
 	fi
@@ -346,23 +346,23 @@ buildGDB()
 	buildGDBWin()
 	{
 		log "GMP..."
-		cd "${NAME_GMP}/obj"
-		confMake "${TMP_DIR}/$2" "" --host="$2"
+		cd "$NAME_GMP/obj"
+		confMake "$TMP_DIR/$2" "" --host="$2"
 		cd ../../
 		
 		log "MPFR..."
-		cd "${NAME_MPFR}/obj"
-		confMake "${TMP_DIR}/$2" "" --with-gmp="${TMP_DIR}/$2" --disable-shared --enable-static --host="$2"
+		cd "$NAME_MPFR/obj"
+		confMake "$TMP_DIR/$2" "" --with-gmp="$TMP_DIR/$2" --disable-shared --enable-static --host="$2"
 		cd ../../
 
 		log "Expat..."
 		cd "${NAME_EXPAT[1]}/obj"
-		confMake "${TMP_DIR}/$2" "../conftools/config.guess" --disable-shared --enable-static --host="$2"
+		confMake "$TMP_DIR/$2" "../conftools/config.guess" --disable-shared --enable-static --host="$2"
 		cd ../../
 
 		log "GDB..."
-		cd "${NAME_GDB}/obj-avr"
-		confMake "$1" "" --with-gmp="${TMP_DIR}/$2" --with-mpfr="${TMP_DIR}/$2" --with-libexpat-prefix="${TMP_DIR}/$2" "${OPTS_GDB[@]}" --host="$2"
+		cd "$NAME_GDB/obj-avr"
+		confMake "$1" "" --with-gmp="$TMP_DIR/$2" --with-mpfr="$TMP_DIR/$2" --with-libexpat-prefix="$TMP_DIR/$2" "${OPTS_GDB[@]}" --host="$2"
 		cd ../../
 	}
 
@@ -389,9 +389,9 @@ buildAVRLIBC()
 	make -j "$JOBCOUNT"
 
 	log "Installing into toolchains..."
-	[[ $FOR_LINUX -eq 1 ]] && log "Linux" && make install prefix="${PREFIX_GCC_LINUX}"
-	[[ $FOR_WINX86 -eq 1 ]] && log "Windows x86" && make install prefix="${PREFIX_GCC_WINX86}"
-	[[ $FOR_WINX64 -eq 1 ]] && log "Windows x64" && make install prefix="${PREFIX_GCC_WINX64}"
+	[[ $FOR_LINUX -eq 1 ]] && log "Linux" && make install prefix="$PREFIX_GCC_LINUX"
+	[[ $FOR_WINX86 -eq 1 ]] && log "Windows x86" && make install prefix="$PREFIX_GCC_WINX86"
+	[[ $FOR_WINX64 -eq 1 ]] && log "Windows x64" && make install prefix="$PREFIX_GCC_WINX64"
 
 	cd ../../
 }
@@ -402,7 +402,7 @@ log "Start"
 
 TIME_START=$(date +%s)
 
-export PATH="${PREFIX_GCC_LINUX}/bin:${PATH}"
+export PATH="$PREFIX_GCC_LINUX/bin:$PATH"
 export CC=""
 
 cleanup
@@ -416,7 +416,7 @@ TIME_END=$(date +%s)
 TIME_RUN=$((TIME_END - TIME_START))
 
 echo ""
-log "Done in ${TIME_RUN} seconds"
-log "Toolchains are in ${BASE}"
+log "Done in $TIME_RUN seconds"
+log "Toolchains are in $BASE"
 
 exit 0
