@@ -17,7 +17,7 @@ backtrace()
 {
     local deptn=${#FUNCNAME[@]}
     local start=${1:-1}
-    for ((i=$start; i<$deptn; i++)); do
+    for ((i=start; i<deptn; i++)); do
         local func="${FUNCNAME[$i]}"
         local line="${BASH_LINENO[$((i-1))]}"
         local src="${BASH_SOURCE[$((i-1))]}"
@@ -107,36 +107,36 @@ HOST_WINX64="x86_64-w64-mingw32"
 #export CFLAGS="-static --static"
 #export CXXFLAGS="${CFLAGS}"
 
-OPTS_BINUTILS="
-	--target=avr
-	--disable-nls
-	--disable-werror
-"
+OPTS_BINUTILS=(
+	"--target=avr"
+	"--disable-nls"
+	"--disable-werror"
+)
 
-OPTS_GCC="
-	--target=avr
-	--enable-languages=c,c++
-	--disable-nls
-	--disable-libssp
-	--disable-libada
-	--with-dwarf2
-	--disable-shared
-	--enable-static
-	--enable-mingw-wildcard
-	--enable-plugin
-	--with-gnu-as
-	--with-gnu-ld
-	--without-zstd
-"
+OPTS_GCC=(
+	"--target=avr"
+	"--enable-languages=c,c++"
+	"--disable-nls"
+	"--disable-libssp"
+	"--disable-libada"
+	"--with-dwarf2"
+	"--disable-shared"
+	"--enable-static"
+	"--enable-mingw-wildcard"
+	"--enable-plugin"
+	"--with-gnu-as"
+	"--with-gnu-ld"
+	"--without-zstd"
+)
 
-OPTS_GDB="
-	--target=avr
-	--with-static-standard-libraries
-	--with-expat
-"
+OPTS_GDB=(
+	"--target=avr"
+	"--with-static-standard-libraries"
+	"--with-expat"
+)
 # --disable-source-highlight
 
-OPTS_LIBC=""
+OPTS_LIBC=()
 
 TMP_DIR=${CWD}/tmp
 LOG_DIR=${CWD}
@@ -260,7 +260,19 @@ downloadSources()
 
 confMake()
 {
-	../configure --prefix=$1 $2 $3 --build=$(${4:-../config.guess})
+	local prefix="$1"
+	local build
+
+	if [[ -n "${2:-}" ]]; then
+		build="$("$2")"
+	else
+		build="$(../config.guess)"
+	fi
+
+	shift 2 || true
+
+	../configure --prefix="$prefix" --build="$build" "$@"
+
 	make -j "$JOBCOUNT"
 	make install-strip
 	rm -rf -- *
@@ -276,9 +288,9 @@ buildBinutils()
 	mkdir -p "${NAME_BINUTILS}/obj-avr"
 	cd "${NAME_BINUTILS}/obj-avr"
 
-	[[ $FOR_LINUX -eq 1 ]] && log "Making for Linux..." && confMake "$PREFIX_GCC_LINUX" "$OPTS_BINUTILS"
-	[[ $FOR_WINX86 -eq 1 ]] && log "Making for Windows x86..." && confMake "$PREFIX_GCC_WINX86" "$OPTS_BINUTILS" --host=$HOST_WINX86
-	[[ $FOR_WINX64 -eq 1 ]] && log "Making for Windows x64..." && confMake "$PREFIX_GCC_WINX64" "$OPTS_BINUTILS" --host=$HOST_WINX64
+	[[ $FOR_LINUX -eq 1 ]] && log "Making for Linux..." && confMake "$PREFIX_GCC_LINUX" "" "${OPTS_BINUTILS[@]}"
+	[[ $FOR_WINX86 -eq 1 ]] && log "Making for Windows x86..." && confMake "$PREFIX_GCC_WINX86" "" "${OPTS_BINUTILS[@]}" --host="$HOST_WINX86"
+	[[ $FOR_WINX64 -eq 1 ]] && log "Making for Windows x64..." && confMake "$PREFIX_GCC_WINX64" "" "${OPTS_BINUTILS[@]}" --host="$HOST_WINX64"
 
 	cd ../../
 }
@@ -300,9 +312,9 @@ buildGCC()
 	cd obj-avr
 	# fixGCCAVR
 
-	[[ $FOR_LINUX -eq 1 ]] && log "Making for Linux..." && confMake "$PREFIX_GCC_LINUX" "$OPTS_GCC"
-	[[ $FOR_WINX86 -eq 1 ]] && log "Making for Windows x86..." && confMake "$PREFIX_GCC_WINX86" "$OPTS_GCC" --host=$HOST_WINX86
-	[[ $FOR_WINX64 -eq 1 ]] && log "Making for Windows x64..." && confMake "$PREFIX_GCC_WINX64" "$OPTS_GCC" --host=$HOST_WINX64
+	[[ $FOR_LINUX -eq 1 ]] && log "Making for Linux..." && confMake "$PREFIX_GCC_LINUX" "" "${OPTS_GCC[@]}"
+	[[ $FOR_WINX86 -eq 1 ]] && log "Making for Windows x86..." && confMake "$PREFIX_GCC_WINX86" "" "${OPTS_GCC[@]}" --host="$HOST_WINX86"
+	[[ $FOR_WINX64 -eq 1 ]] && log "Making for Windows x64..." && confMake "$PREFIX_GCC_WINX64" "" "${OPTS_GCC[@]}" --host="$HOST_WINX64"
 
 	cd ../../
 }
@@ -327,7 +339,7 @@ buildGDB()
 	if [[ $FOR_LINUX -eq 1 ]]; then
 		log "Making for Linux..."
 		cd "${NAME_GDB}/obj-avr"
-		confMake "$PREFIX_GCC_LINUX" "$OPTS_GDB"
+		confMake "$PREFIX_GCC_LINUX" "" "${OPTS_GDB[@]}"
 		cd ../../
 	fi
 
@@ -335,27 +347,27 @@ buildGDB()
 	{
 		log "GMP..."
 		cd "${NAME_GMP}/obj"
-		confMake "${TMP_DIR}/$2" --host=$2
+		confMake "${TMP_DIR}/$2" "" --host="$2"
 		cd ../../
 		
 		log "MPFR..."
 		cd "${NAME_MPFR}/obj"
-		confMake "${TMP_DIR}/$2" "--with-gmp=$TMP_DIR/$2 --disable-shared --enable-static" --host=$2
+		confMake "${TMP_DIR}/$2" "" --with-gmp="${TMP_DIR}/$2" --disable-shared --enable-static --host="$2"
 		cd ../../
 
 		log "Expat..."
 		cd "${NAME_EXPAT[1]}/obj"
-		confMake "${TMP_DIR}/$2" "--disable-shared --enable-static" --host=$2 "../conftools/config.guess"
+		confMake "${TMP_DIR}/$2" "../conftools/config.guess" --disable-shared --enable-static --host="$2"
 		cd ../../
 
 		log "GDB..."
 		cd "${NAME_GDB}/obj-avr"
-		confMake "$1" "--with-gmp=$TMP_DIR/$2 --with-mpfr=$TMP_DIR/$2 --with-libexpat-prefix=$TMP_DIR/$2 $OPTS_GDB" --host=$2
+		confMake "$1" "" --with-gmp="${TMP_DIR}/$2" --with-mpfr="${TMP_DIR}/$2" --with-libexpat-prefix="${TMP_DIR}/$2" "${OPTS_GDB[@]}" --host="$2"
 		cd ../../
 	}
 
-	[[ $FOR_WINX86 -eq 1 ]] && log "Making for Windows x86..." && buildGDBWin "$PREFIX_GCC_WINX86" $HOST_WINX86
-	[[ $FOR_WINX64 -eq 1 ]] && log "Making for Windows x64..." && buildGDBWin "$PREFIX_GCC_WINX64" $HOST_WINX64
+	[[ $FOR_WINX86 -eq 1 ]] && log "Making for Windows x86..." && buildGDBWin "$PREFIX_GCC_WINX86" "$HOST_WINX86"
+	[[ $FOR_WINX64 -eq 1 ]] && log "Making for Windows x64..." && buildGDBWin "$PREFIX_GCC_WINX64" "$HOST_WINX64"
 
 	# For some reason we need some random command here otherwise
 	# the script exits with no error when FOR_WINX64=0
@@ -373,7 +385,7 @@ buildAVRLIBC()
 	cd "${NAME_LIBC[1]}/obj-avr"
 
 	log "Making..."
-	../configure "$OPTS_LIBC" --host=avr --build="$(../config.guess)"
+	../configure "${OPTS_LIBC[@]}" --host=avr --build="$(../config.guess)"
 	make -j "$JOBCOUNT"
 
 	log "Installing into toolchains..."
