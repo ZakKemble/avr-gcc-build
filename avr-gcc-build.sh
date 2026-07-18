@@ -366,12 +366,15 @@ buildGDB()
 		cd ../../
 	}
 
-	[[ $FOR_WINX86 -eq 1 ]] && log "Making for Windows x86..." && buildGDBWin "$PREFIX_GCC_WINX86" "$HOST_WINX86"
-	[[ $FOR_WINX64 -eq 1 ]] && log "Making for Windows x64..." && buildGDBWin "$PREFIX_GCC_WINX64" "$HOST_WINX64"
+	if [[ $FOR_WINX86 -eq 1 ]]; then
+		log "Making for Windows x86..."
+		buildGDBWin "$PREFIX_GCC_WINX86" "$HOST_WINX86"
+	fi
 
-	# For some reason we need some random command here otherwise
-	# the script exits with no error when FOR_WINX64=0
-	echo "" > /dev/null
+	if [[ $FOR_WINX64 -eq 1 ]]; then
+		log "Making for Windows x64..."
+		buildGDBWin "$PREFIX_GCC_WINX64" "$HOST_WINX64"
+	fi
 }
 
 buildAVRLIBC()
