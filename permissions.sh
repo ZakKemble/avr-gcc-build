@@ -2,7 +2,7 @@
 
 # Set executable permissions
 
-VERSION=${VERSION:-15.2.0}
+VERSION=${VERSION:-16.1.0}
 
 [ -z "$USER" ] && echo "USER not set!" && exit 1
 

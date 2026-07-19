@@ -3,7 +3,7 @@
 # avr-gcc-build
 # https://blog.zakkemble.net/avr-gcc-builds/
 # https://github.com/ZakKemble/avr-gcc-build
-# Copyright (C) 2017-2025, Zak Kemble
+# Copyright (C) 2017-2026, Zak Kemble
 # Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)
 # http://creativecommons.org/licenses/by-sa/4.0/
 
@@ -82,15 +82,15 @@ BUILD_LIBC=${BUILD_LIBC:-1}
 #BUILD_MAKE=1
 #BUILD_COREUTILS=1
 
-NAME_BINUTILS="binutils-${VER_BINUTILS:-2.45}"
-NAME_GCC="gcc-${VER_GCC:-15.2.0}"
-NAME_GDB="gdb-${VER_GDB:-16.3}"
+NAME_BINUTILS="binutils-${VER_BINUTILS:-2.46.1}"
+NAME_GCC="gcc-${VER_GCC:-16.1.0}"
+NAME_GDB="gdb-${VER_GDB:-17.2}"
 NAME_GMP="gmp-6.3.0" # GDB 11+ needs libgmp
 NAME_MPFR="mpfr-4.2.2" # GDB 14+ needs libmpfr
 NAME_EXPAT=("R_2_7_1" "expat-2.7.1") # GDB XML support
 #NAME_MAKE="make-4.4.1"
 #NAME_COREUTILS="coreutils-9.6"
-NAME_LIBC=("avr-libc-2_2_1-release" "avr-libc-2.2.1")
+NAME_LIBC=("avr-libc-2_3_2-release" "avr-libc-2.3.2")
 
 # Output locations for built toolchains
 BASE=${BASE:-$CWD/build/}
